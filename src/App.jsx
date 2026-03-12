@@ -294,7 +294,7 @@ const LOGINS = [
   { email:"deborah@lesalis.com.br",         senha:"lesalis2026", tipo:"marca", nome:"Deborah",       role:"admin",      marcaId:"m2" },
   { email:"leonardo@prls.com.br",         senha:"prls2026", tipo:"marca", nome:"Leonardo",    role:"admin",      marcaId:"m2" },
   { email:"squad@minerbz.com.br",         senha:"squad2026",tipo:"marca", nome:"Squad Miner", role:"admin",      marcaId:"m1" },
-];
+{ email:"deborah@lesalis.com.br", senha:"lesalis2026", tipo:"marca", nome:"Deborah", role:"admin", marcaId:"m2" },];
 
 const STATUS_CFG = {
   ativo:   { label:"Ativo",   bg:"#e9fbed", c:"#28cd41" },

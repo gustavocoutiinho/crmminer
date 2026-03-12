@@ -256,7 +256,7 @@ const supabase = {
 const DB = {
   marcas: [
     { id:"m1", nome:"Miner Fashion",  seg:"Moda",       cnpj:"12.345.678/0001-90", plano:"pro",        status:"ativo",   lojas:2, usuarios:8,  clientes:1247, mrr:497,  resp:"Joao Souza",    email:"admin@minerfashion.com.br",  cidade:"Imperatriz",    estado:"MA", createdAt:"15 Jan 2024" },
-    { id:"m2", nome:"Estilo Total",   seg:"Calcados",   cnpj:"23.456.789/0001-01", plano:"starter",    status:"ativo",   lojas:1, usuarios:4,  clientes:634,  mrr:197,  resp:"Ana Lima",      email:"admin@estilototal.com.br",    cidade:"Fortaleza",     estado:"CE", createdAt:"20 Mar 2024" },
+    { id:"m2", nome:"Le Salis",        seg:"Moda",       cnpj:"00.000.000/0001-00", plano:"pro",        status:"ativo",   lojas:2, usuarios:3,  clientes:8209, mrr:497,  resp:"Le Salis Admin", email:"admin@lesalis.com.br",        cidade:"Fortaleza",     estado:"CE", createdAt:"02 Out 2020" },
     { id:"m3", nome:"Casa & Decor",   seg:"Decoracao",  cnpj:"34.567.890/0001-12", plano:"enterprise", status:"ativo",   lojas:5, usuarios:22, clientes:4821, mrr:1497, resp:"Roberto Mendes", email:"admin@casadecor.com.br",      cidade:"Sao Paulo",     estado:"SP", createdAt:"08 Nov 2023" },
     { id:"m4", nome:"SportPro",       seg:"Esportes",   cnpj:"45.678.901/0001-23", plano:"starter",    status:"trial",   lojas:1, usuarios:2,  clientes:89,   mrr:0,    resp:"Carla Nunes",   email:"admin@sportpro.com.br",       cidade:"Rio de Janeiro", estado:"RJ", createdAt:"01 Fev 2026" },
     { id:"m5", nome:"TechBiz Store",  seg:"Eletronicos",cnpj:"56.789.012/0001-34", plano:"pro",        status:"inativo", lojas:3, usuarios:11, clientes:2103, mrr:0,    resp:"Paulo Alves",   email:"admin@techbiz.com.br",        cidade:"Porto Alegre",  estado:"RS", createdAt:"14 Set 2023" },
@@ -290,6 +290,7 @@ const LOGINS = [
   { email:"admin@minerfashion.com.br",    senha:"admin123", tipo:"marca", nome:"Joao Souza",  role:"admin",      marcaId:"m1" },
   { email:"fernanda@minerfashion.com.br", senha:"super123", tipo:"marca", nome:"Fernanda G.", role:"supervisor", marcaId:"m1" },
   { email:"maria@minerfashion.com.br",    senha:"vend123",  tipo:"marca", nome:"Maria Sales", role:"vendedor",   marcaId:"m1" },
+  { email:"admin@lesalis.com.br",          senha:"lesalis2026", tipo:"marca", nome:"Le Salis Admin", role:"admin", marcaId:"m2" },
   { email:"leonardo@prls.com.br",         senha:"prls2026", tipo:"marca", nome:"Leonardo",    role:"admin",      marcaId:"m2" },
   { email:"squad@minerbz.com.br",         senha:"squad2026",tipo:"marca", nome:"Squad Miner", role:"admin",      marcaId:"m1" },
 ];

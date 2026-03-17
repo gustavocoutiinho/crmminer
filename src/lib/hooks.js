@@ -1,62 +1,54 @@
-// ── Custom Hooks para acesso a dados Supabase ──────────────────────────────
 import { useState, useEffect, useCallback } from "react";
-import { db } from "./supabase";
+import { fetchData, createRecord, updateRecord, deleteRecord } from "./api";
 
-// Hook genérico para carregar dados de uma tabela
-export function useSupabaseQuery(table, { select = "*", eq = {}, order = null, limit = null } = {}) {
+export function useSupabaseQuery(table, { eq = {}, limit } = {}) {
   const [data, setData] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const refetch = useCallback(async () => {
     setLoading(true);
-    let query = db.from(table).select(select);
-    Object.entries(eq).forEach(([col, val]) => {
-      query = query.eq(col, val);
-    });
-    if (order) query = query.order(order.col, { ascending: order.asc ?? true });
-    if (limit) query = query.limit(limit);
-    const { data: result, error: err } = await query.execute();
-    setData(result || []);
-    setError(err);
+    try {
+      const opts = { limit: limit || 250 };
+      if (eq.segmento_rfm) opts.segmento_rfm = eq.segmento_rfm;
+      if (eq.search) opts.search = eq.search;
+      if (eq.status) opts.status = eq.status;
+      const result = await fetchData(table, opts);
+      setData(result.data || []);
+      setTotal(result.total || 0);
+      setError(null);
+    } catch (err) {
+      setData([]);
+      setError(err.message);
+    }
     setLoading(false);
-  }, [table, select, JSON.stringify(eq), JSON.stringify(order), limit]);
+  }, [table, JSON.stringify(eq), limit]);
 
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { data, loading, error, refetch };
+  useEffect(() => { refetch(); }, [refetch]);
+  return { data, total, loading, error, refetch };
 }
 
-// Hook para mutações (insert, update, delete)
 export function useSupabaseMutation(table) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const insert = async (record) => {
     setLoading(true);
-    const { data, error } = await db.from(table).insert(record).execute();
-    setError(error);
-    setLoading(false);
-    return { data, error };
+    try { const r = await createRecord(table, record); setLoading(false); return r; }
+    catch (e) { setLoading(false); return { error: e.message }; }
   };
 
   const update = async (id, changes) => {
     setLoading(true);
-    const { data, error } = await db.from(table).update(changes).eq("id", id).execute();
-    setError(error);
-    setLoading(false);
-    return { data, error };
+    try { const r = await updateRecord(table, id, changes); setLoading(false); return r; }
+    catch (e) { setLoading(false); return { error: e.message }; }
   };
 
   const remove = async (id) => {
     setLoading(true);
-    const { data, error } = await db.from(table).delete().eq("id", id).execute();
-    setError(error);
-    setLoading(false);
-    return { data, error };
+    try { const r = await deleteRecord(table, id); setLoading(false); return r; }
+    catch (e) { setLoading(false); return { error: e.message }; }
   };
 
-  return { insert, update, remove, loading, error };
+  return { insert, update, remove, loading };
 }

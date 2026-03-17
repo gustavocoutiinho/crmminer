@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // ── Módulos extraídos ────────────────────────────────────────────────────────
-import { supabaseAuth, db, clearSession } from "./lib/supabase";
 import { T, BRAND, STATUS_CFG, PLANO_CFG, ROLE_CFG, RFM_CFG } from "./lib/theme";
 import {
   Avatar, Chip, Toggle, ProgressBar, Lbl, Divider, FormRow,
   ApTooltip, Modal, SectionHeader, KpiCard, MinerLogo,
 } from "./components/UI";
+import { login as apiLogin, logout as apiLogout, getUser as getStoredUser, fetchStats, fetchData, fetchClienteDetail, createRecord, updateRecord, deleteRecord, checkHealth } from "./lib/api";
 import { useSupabaseQuery, useSupabaseMutation } from "./lib/hooks";
 
 // ── STYLES (mantido aqui por tamanho) ────────────────────────────────────────
@@ -182,27 +182,12 @@ const PLANOS = [
 // ── DB_FALLBACK (dados demo para funcionar sem Supabase) ─────────────────────
 const DB_FALLBACK = {
   marcas: [
-    { id: "m1", nome: "Miner Fashion", seg: "Moda", cnpj: "12.345.678/0001-90", plano: "pro", status: "ativo", lojas: 2, usuarios: 8, clientes: 1247, mrr: 497, resp: "Joao Souza", email: "admin@minerfashion.com.br", cidade: "Imperatriz", estado: "MA", created_at: "15 Jan 2024" },
-    { id: "m2", nome: "Le Salis", seg: "Moda", cnpj: "00.000.000/0001-00", plano: "pro", status: "ativo", lojas: 2, usuarios: 4, clientes: 8209, mrr: 1497, resp: "Deborah", email: "deborah@lesalis.com.br", cidade: "Fortaleza", estado: "CE", created_at: "02 Out 2020" },
-    { id: "m3", nome: "Casa & Decor", seg: "Decoracao", cnpj: "34.567.890/0001-12", plano: "enterprise", status: "ativo", lojas: 5, usuarios: 22, clientes: 4821, mrr: 1497, resp: "Roberto Mendes", email: "admin@casadecor.com.br", cidade: "Sao Paulo", estado: "SP", created_at: "08 Nov 2023" },
-    { id: "m4", nome: "SportPro", seg: "Esportes", cnpj: "45.678.901/0001-23", plano: "starter", status: "trial", lojas: 1, usuarios: 2, clientes: 89, mrr: 0, resp: "Carla Nunes", email: "admin@sportpro.com.br", cidade: "Rio de Janeiro", estado: "RJ", created_at: "01 Fev 2026" },
-    { id: "m5", nome: "TechBiz Store", seg: "Eletronicos", cnpj: "56.789.012/0001-34", plano: "pro", status: "inativo", lojas: 3, usuarios: 11, clientes: 2103, mrr: 0, resp: "Paulo Alves", email: "admin@techbiz.com.br", cidade: "Porto Alegre", estado: "RS", created_at: "14 Set 2023" },
+    { id: "prls", nome: "PRLS Calçados", seg: "Moda / Calçados", cnpj: "", plano: "pro", status: "ativo", lojas: 1, usuarios: 3, clientes: 0, mrr: 497, resp: "Leonardo Umbelino", email: "leonardo@prls.com.br", cidade: "Fortaleza", estado: "CE", created_at: "07 Mar 2025" },
   ],
   usuarios: [
-    { id: "u1", nome: "Maria Sales", email: "maria@minerfashion.com.br", role: "vendedor", status: "ativo", loja: "Imperatriz", vendas: 18, meta: 50000, fat: 48200 },
-    { id: "u2", nome: "Carlos Vendas", email: "carlos@minerfashion.com.br", role: "vendedor", status: "ativo", loja: "Fortaleza", vendas: 12, meta: 40000, fat: 32100 },
-    { id: "u3", nome: "Ana Costa", email: "ana@minerfashion.com.br", role: "vendedor", status: "ativo", loja: "Imperatriz", vendas: 9, meta: 30000, fat: 21400 },
-    { id: "u4", nome: "Fernanda G.", email: "fernanda@minerfashion.com.br", role: "supervisor", status: "ativo", loja: "Todas", vendas: 0, meta: 0, fat: 0 },
-    { id: "u5", nome: "Joao Souza", email: "admin@minerfashion.com.br", role: "admin", status: "ativo", loja: "Todas", vendas: 0, meta: 0, fat: 0 },
+    { id: "u1", nome: "Leonardo Umbelino", email: "leonardo@prls.com.br", role: "admin", status: "ativo", loja: "Fortaleza", vendas: 0, meta: 0, fat: 0 },
   ],
-  clientes: [
-    { nome: "Marina Oliveira", email: "marina@gmail.com", tel: "(11) 99234-5678", seg: "campiao", rec: 8, pedidos: 34, receita: 12840, vend: "Maria Sales" },
-    { nome: "Rafael Costa", email: "rafael@outlook.com", tel: "(21) 98765-4321", seg: "campiao", rec: 15, pedidos: 28, receita: 9210, vend: "Maria Sales" },
-    { nome: "Beatriz Lima", email: "bealima@gmail.com", tel: "(31) 97654-3210", seg: "fiel", rec: 12, pedidos: 21, receita: 8750, vend: "Carlos Vendas" },
-    { nome: "Carlos Mendes", email: "carlos@empresa.com", tel: "(11) 96543-2109", seg: "fiel", rec: 18, pedidos: 19, receita: 7390, vend: "Maria Sales" },
-    { nome: "Julia Santos", email: "julia@gmail.com", tel: "(11) 93210-9876", seg: "em_risco", rec: 92, pedidos: 9, receita: 4320, vend: "Ana Costa" },
-    { nome: "Marcos Pinto", email: "marcos@email.com", tel: "(21) 91234-5678", seg: "inativo", rec: 145, pedidos: 4, receita: 1820, vend: "Carlos Vendas" },
-  ],
+  clientes: [],
   mrrHist: [
     { m: "Set", v: 2890 }, { m: "Out", v: 3180 }, { m: "Nov", v: 3580 },
     { m: "Dez", v: 3580 }, { m: "Jan", v: 3977 }, { m: "Fev", v: 2191 },
@@ -218,16 +203,11 @@ const DB_FALLBACK = {
   ],
 };
 
-// ── LOGINS demo ──────────────────────────────────────────────────────────────
+// ── LOGINS ────────────────────────────────────────────────────────────────────
 const LOGINS = [
-  { email: "owner@miner.com", senha: "miner123", tipo: "owner", nome: "Joao Dono", role: "owner", marcaId: null },
-  { email: "admin@minerfashion.com.br", senha: "admin123", tipo: "marca", nome: "Joao Souza", role: "admin", marcaId: "m1" },
-  { email: "fernanda@minerfashion.com.br", senha: "super123", tipo: "marca", nome: "Fernanda G.", role: "supervisor", marcaId: "m1" },
-  { email: "maria@minerfashion.com.br", senha: "vend123", tipo: "marca", nome: "Maria Sales", role: "vendedor", marcaId: "m1" },
-  { email: "admin@lesalis.com.br", senha: "lesalis2026", tipo: "marca", nome: "Le Salis Admin", role: "admin", marcaId: "m2" },
-  { email: "deborah@lesalis.com.br", senha: "lesalis2026", tipo: "marca", nome: "Deborah", role: "admin", marcaId: "m2" },
-  { email: "leonardo@prls.com.br", senha: "prls2026", tipo: "marca", nome: "Leonardo", role: "admin", marcaId: "m2" },
-  { email: "squad@minerbz.com.br", senha: "squad2026", tipo: "marca", nome: "Squad Miner", role: "admin", marcaId: "m1" },
+  { email: "gustavo@minerbz.com.br", senha: "miner2026", tipo: "owner", nome: "Gustavo Coutinho", role: "owner", marcaId: null },
+  { email: "leonardo@prls.com.br", senha: "prls2026", tipo: "marca", nome: "Leonardo Umbelino", role: "admin", marcaId: "prls" },
+  { email: "squad@minerbz.com.br", senha: "squad2026", tipo: "marca", nome: "Squad Miner", role: "admin", marcaId: "prls" },
 ];
 
 // ── LOGIN ────────────────────────────────────────────────────────────────────
@@ -236,7 +216,6 @@ function Login({ onLogin }) {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
-  const [hints, setHints] = useState(false);
 
   const chEmail = (v) => { setEmail(v); if (erro) setErro(""); };
   const chSenha = (v) => { setSenha(v); if (erro) setErro(""); };
@@ -245,54 +224,29 @@ function Login({ onLogin }) {
     setLoading(true);
     setErro("");
 
-    // 1. Tentar Supabase auth
-    const { data, error } = await supabaseAuth.signInWithPassword({
-      email: email.trim(),
-      password: senha,
-    });
-
-    if (data?.user) {
-      // Carregar profile do banco
-      try {
-        const { data: profile } = await db
-          .from("profiles")
-          .select("*")
-          .eq("id", data.user.id)
-          .single()
-          .execute();
-
-        if (profile) {
-          onLogin({
-            id: profile.id,
-            email: profile.email || data.user.email,
-            nome: profile.nome || data.user.email.split("@")[0],
-            tipo: profile.role === "owner" ? "owner" : "marca",
-            role: profile.role || "admin",
-            marcaId: profile.marca_id || null,
-            marca_id: profile.marca_id || null,
-            supabaseUser: true,
-          });
-          return;
-        }
-      } catch (_) {
-        // profile não encontrado, usar metadata
+    try {
+      // 1. Tentar API real (Postgres)
+      const result = await apiLogin(email.trim(), senha);
+      if (result?.user) {
+        const u = result.user;
+        onLogin({
+          id: u.id,
+          email: u.email,
+          nome: u.nome,
+          tipo: u.role === "miner" ? "owner" : "marca",
+          role: u.role,
+          marcaId: u.marca_id,
+          marca_id: u.marca_id,
+          marca: u.marca,
+          loja: u.loja,
+        });
+        return;
       }
-
-      // Fallback: usar user_metadata
-      onLogin({
-        id: data.user.id,
-        email: data.user.email,
-        nome: data.user.user_metadata?.nome || data.user.email.split("@")[0],
-        tipo: data.user.user_metadata?.role === "owner" ? "owner" : "marca",
-        role: data.user.user_metadata?.role || "admin",
-        marcaId: data.user.user_metadata?.marca_id || "m1",
-        marca_id: data.user.user_metadata?.marca_id || "m1",
-        supabaseUser: true,
-      });
-      return;
+    } catch (apiErr) {
+      console.log("[Login] API error, trying fallback:", apiErr.message);
     }
 
-    // 2. Fallback: logins demo
+    // 2. Fallback: logins locais (offline)
     const u = LOGINS.find((l) => l.email === email.trim() && l.senha === senha);
     if (u) {
       onLogin({ ...u, marca_id: u.marcaId });
@@ -338,29 +292,9 @@ function Login({ onLogin }) {
             </button>
           </div>
 
-          <Divider />
-
-          <button className="ap-btn-ghost" style={{ fontSize: 12, color: T.muted }} onClick={() => setHints(!hints)}>
-            {hints ? "▲" : "▼"} Logins de demonstração
-          </button>
-
-          {hints && (
-            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              {LOGINS.map((h, i) => {
-                const rd = ROLE_CFG[h.role];
-                return (
-                  <div key={i} onClick={() => { chEmail(h.email); chSenha(h.senha); }}
-                    style={{ background: rd.bg, border: `1px solid ${rd.c}22`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", transition: "opacity .15s" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = ".78")}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-                  >
-                    <div style={{ fontSize: 11, color: rd.c, fontWeight: 700, marginBottom: 3 }}>{rd.icon} {rd.label}</div>
-                    <div className="num" style={{ fontSize: 11, color: T.muted }}>{h.email}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <div style={{ textAlign: "center", marginTop: 8 }}>
+            <span style={{ fontSize: 12, color: T.muted }}>Problemas para acessar? Fale com o admin.</span>
+          </div>
         </div>
 
         <p style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: T.muted }}>Miner CRM ® 2026 — Todos os direitos reservados</p>
@@ -518,7 +452,7 @@ function OwnerDashboard({ marcas }) {
             <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, flexShrink: 0 }}>{m.nome[0]}</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700 }}>{m.nome}</div>
-              <div style={{ fontSize: 11, color: T.muted }}>{m.seg} · {m.cidade}/{m.estado}</div>
+              <div style={{ fontSize: 11, color: T.muted }}>{m.segmento || m.seg} · {m.cidade}/{m.estado}</div>
             </div>
             <Chip label={PLANOS.find((p) => p.id === m.plano)?.label || m.plano} c={PLANO_CFG[m.plano]?.c} bg={PLANO_CFG[m.plano]?.bg} />
             <Chip label={STATUS_CFG[m.status]?.label || m.status} c={STATUS_CFG[m.status]?.c} bg={STATUS_CFG[m.status]?.bg} />
@@ -530,9 +464,36 @@ function OwnerDashboard({ marcas }) {
   );
 }
 
-function OwnerMarcas({ marcas, setMarcas }) {
+function OwnerMarcas({ marcas, setMarcas, refetchMarcas }) {
   const [showModal, setShowModal] = useState(false);
   const [detail, setDetail] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleCreateMarca = async (f) => {
+    setSaving(true);
+    try {
+      const record = {
+        nome: f.nome, segmento: f.seg, cnpj: f.cnpj, email: f.email,
+        responsavel: f.resp, cidade: f.cidade, plano: f.plano,
+        status: "trial", lojas: 1,
+      };
+      await createRecord("marcas", record);
+      if (refetchMarcas) await refetchMarcas();
+    } catch (e) {
+      // Fallback to local state
+      setMarcas((a) => [...a, { ...f, id: `m${Date.now()}`, lojas: 1, usuarios: 1, clientes: 0, mrr: PLANOS.find((p) => p.id === f.plano)?.preco || 0, status: "trial", created_at: "Agora" }]);
+    }
+    setSaving(false);
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await updateRecord("marcas", id, { status: newStatus });
+      if (refetchMarcas) await refetchMarcas();
+    } catch (e) {
+      setMarcas((a) => a.map((x) => x.id === id ? { ...x, status: newStatus } : x));
+    }
+  };
 
   function NovaMarca({ onClose, onSave }) {
     const [f, setF] = useState({ nome: "", seg: "", cnpj: "", email: "", resp: "", cidade: "", plano: "starter" });
@@ -564,8 +525,8 @@ function OwnerMarcas({ marcas, setMarcas }) {
               ))}
             </div>
           </div>
-          <button className="ap-btn ap-btn-primary" disabled={!f.nome || !f.email || !f.resp} onClick={() => { if (f.nome && f.email && f.resp) { onSave({ ...f, id: `m${Date.now()}`, lojas: 1, usuarios: 1, clientes: 0, mrr: PLANOS.find((p) => p.id === f.plano)?.preco || 0, status: "trial", created_at: "Agora" }); onClose(); } }}>
-            Cadastrar Marca →
+          <button className="ap-btn ap-btn-primary" disabled={!f.nome || !f.email || !f.resp || saving} onClick={() => { if (f.nome && f.email && f.resp) { onSave(f); onClose(); } }}>
+            {saving ? "Salvando…" : "Cadastrar Marca →"}
           </button>
         </div>
       </Modal>
@@ -598,20 +559,20 @@ function OwnerMarcas({ marcas, setMarcas }) {
                 <td className="ap-td">
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>{m.nome[0]}</div>
-                    <div><div style={{ fontSize: 14, fontWeight: 700 }}>{m.nome}</div><div style={{ fontSize: 11, color: T.muted }}>{m.resp}</div></div>
+                    <div><div style={{ fontSize: 14, fontWeight: 700 }}>{m.nome}</div><div style={{ fontSize: 11, color: T.muted }}>{m.responsavel || m.resp}</div></div>
                   </div>
                 </td>
-                <td className="ap-td"><span style={{ fontSize: 13, color: T.sub }}>{m.seg}</span></td>
+                <td className="ap-td"><span style={{ fontSize: 13, color: T.sub }}>{m.segmento || m.seg}</span></td>
                 <td className="ap-td"><Chip label={PLANOS.find((p) => p.id === m.plano)?.label} c={PLANO_CFG[m.plano]?.c} bg={PLANO_CFG[m.plano]?.bg} /></td>
                 <td className="ap-td"><Chip label={STATUS_CFG[m.status]?.label} c={STATUS_CFG[m.status]?.c} bg={STATUS_CFG[m.status]?.bg} /></td>
                 <td className="ap-td"><span className="num" style={{ fontSize: 13 }}>{(m.clientes || 0).toLocaleString("pt-BR")}</span></td>
-                <td className="ap-td"><span className="num" style={{ fontSize: 13, fontWeight: 700, color: "#4545F5" }}>R$ {m.mrr || 0}</span></td>
+                <td className="ap-td"><span className="num" style={{ fontSize: 13, fontWeight: 700, color: "#4545F5" }}>R$ {m.mrr || PLANOS.find((p) => p.id === m.plano)?.preco || 0}</span></td>
                 <td className="ap-td">
                   <div style={{ display: "flex", gap: 6 }}>
                     <button className="ap-btn ap-btn-secondary ap-btn-sm" onClick={() => setDetail(m)}>Ver</button>
-                    {m.status === "ativo" && <button className="ap-btn ap-btn-danger ap-btn-sm" onClick={() => setMarcas((a) => a.map((x) => x.id === m.id ? { ...x, status: "inativo" } : x))}>Suspender</button>}
-                    {m.status === "inativo" && <button className="ap-btn ap-btn-success ap-btn-sm" onClick={() => setMarcas((a) => a.map((x) => x.id === m.id ? { ...x, status: "ativo" } : x))}>Reativar</button>}
-                    {m.status === "trial" && <button className="ap-btn ap-btn-success ap-btn-sm" onClick={() => setMarcas((a) => a.map((x) => x.id === m.id ? { ...x, status: "ativo" } : x))}>Ativar</button>}
+                    {m.status === "ativo" && <button className="ap-btn ap-btn-danger ap-btn-sm" onClick={() => handleStatusChange(m.id, "inativo")}>Suspender</button>}
+                    {m.status === "inativo" && <button className="ap-btn ap-btn-success ap-btn-sm" onClick={() => handleStatusChange(m.id, "ativo")}>Reativar</button>}
+                    {m.status === "trial" && <button className="ap-btn ap-btn-success ap-btn-sm" onClick={() => handleStatusChange(m.id, "ativo")}>Ativar</button>}
                   </div>
                 </td>
               </tr>
@@ -620,11 +581,11 @@ function OwnerMarcas({ marcas, setMarcas }) {
         </table>
       </div>
 
-      {showModal && <NovaMarca onClose={() => setShowModal(false)} onSave={(m) => setMarcas((a) => [...a, m])} />}
+      {showModal && <NovaMarca onClose={() => setShowModal(false)} onSave={handleCreateMarca} />}
       {detail && (
-        <Modal title={detail.nome} subtitle={detail.seg} onClose={() => setDetail(null)} width={520}>
+        <Modal title={detail.nome} subtitle={detail.segmento || detail.seg} onClose={() => setDetail(null)} width={520}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {[["Responsável", detail.resp], ["Email", detail.email], ["CNPJ", detail.cnpj], ["Cadastro", detail.created_at], ["Cidade/UF", `${detail.cidade}/${detail.estado}`], ["MRR", `R$ ${detail.mrr}/mês`], ["Clientes", detail.clientes], ["Usuários", detail.usuarios]].map(([k, v], i) => (
+            {[["Responsável", detail.responsavel || detail.resp], ["Email", detail.email], ["CNPJ", detail.cnpj], ["Cadastro", detail.created_at], ["Cidade/UF", `${detail.cidade || ""}/${detail.estado || ""}`], ["MRR", `R$ ${detail.mrr || PLANOS.find((p) => p.id === detail.plano)?.preco || 0}/mês`], ["Clientes", detail.clientes], ["Lojas", detail.lojas]].map(([k, v], i) => (
               <div key={i} style={{ background: "rgba(0,0,0,0.03)", borderRadius: 10, padding: "10px 14px" }}>
                 <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>{k}</div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{v || "—"}</div>
@@ -695,7 +656,7 @@ function OwnerFinanceiro({ marcas }) {
 
 function PortalOwner({ user, onLogout }) {
   const [page, setPage] = useState("dashboard");
-  const { data: sbMarcas, loading: loadingMarcas } = useSupabaseQuery("marcas");
+  const { data: sbMarcas, loading: loadingMarcas, refetch: refetchMarcas } = useSupabaseQuery("marcas");
   const [localMarcas, setLocalMarcas] = useState(DB_FALLBACK.marcas);
 
   const marcas = sbMarcas && sbMarcas.length > 0 ? sbMarcas : localMarcas;
@@ -707,7 +668,7 @@ function PortalOwner({ user, onLogout }) {
       <Sidebar page={page} setPage={setPage} user={user} onLogout={onLogout} isOwner />
       <div style={{ flex: 1, overflow: "auto", padding: "32px 36px" }}>
         {page === "dashboard" && <OwnerDashboard marcas={marcas} />}
-        {page === "marcas" && <OwnerMarcas marcas={marcas} setMarcas={setMarcas} />}
+        {page === "marcas" && <OwnerMarcas marcas={marcas} setMarcas={setMarcas} refetchMarcas={refetchMarcas} />}
         {page === "planos" && <OwnerPlanos marcas={marcas} />}
         {page === "financeiro" && <OwnerFinanceiro marcas={marcas} />}
       </div>
@@ -717,11 +678,22 @@ function PortalOwner({ user, onLogout }) {
 
 // ── MARCA PAGES ──────────────────────────────────────────────────────────────
 function MarcaDashboard({ user }) {
-  const isVend = user.role === "vendedor";
-  const meta = 50000, fat = 48200;
-  const pct = Math.min(Math.round((fat / meta) * 100), 100);
-  const barC = pct >= 100 ? "#28cd41" : pct >= 70 ? "#4545F5" : "#ff9500";
-  const rd = ROLE_CFG[user.role];
+  const rd = ROLE_CFG[user.role] || ROLE_CFG.vendedor;
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats().then(s => { setStats(s); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  const c = stats?.clientes || 0;
+  const p = stats?.pedidos || 0;
+  const r = stats?.receita || 0;
+  const tm = stats?.ticket_medio || 0;
+  const rfm = stats?.rfm || {};
+  const topCli = stats?.top_clientes || [];
+  const porMes = (stats?.pedidos_por_mes || []).map(m => ({ m: m.mes?.slice(5) || "", v: +m.v }));
+  const totalRfm = Object.values(rfm).reduce((s,n) => s+n, 0) || 1;
 
   return (
     <div className="fade-up">
@@ -731,69 +703,71 @@ function MarcaDashboard({ user }) {
         <p style={{ fontSize: 14, color: T.sub, marginTop: 4 }}>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
       </div>
 
-      {isVend && (
-        <div className="ap-card" style={{ padding: "22px 26px", marginBottom: 20, border: `1.5px solid ${barC}28`, background: `${barC}09` }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: barC, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>Meta de Fevereiro</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span className="num" style={{ fontSize: 32, fontWeight: 800, color: barC }}>R$ {(fat / 1000).toFixed(1)}k</span>
-                <span style={{ fontSize: 14, color: T.sub }}>/ R$ {(meta / 1000).toFixed(0)}k</span>
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div className="num" style={{ fontSize: 42, fontWeight: 800, color: barC }}>{pct}%</div>
-              <div style={{ fontSize: 11, color: T.muted }}>atingido</div>
-            </div>
-          </div>
-          <ProgressBar value={fat} max={meta} height={10} />
-        </div>
-      )}
+      {loading && <div className="ap-card" style={{ padding: "20px 24px", marginBottom: 20, textAlign: "center" }}><span style={{ fontSize: 13, color: T.muted }}>⏳ Carregando dados...</span></div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
-        {(isVend
-          ? [{ label: "Meus Clientes", value: "42", color: "#4545F5", icon: "👥" }, { label: "Vendas no Mês", value: "18", color: "#28cd41", icon: "🛍" }, { label: "Conversão", value: "72%", color: "#ff9500", icon: "📊" }, { label: "Ticket Médio", value: "R$ 2.678", color: "#8e44ef", icon: "💰" }]
-          : [{ label: "Receita do Time", value: "R$ 325k", color: "#4545F5", icon: "💰", trend: 8 }, { label: "Total Clientes", value: "1.247", color: "#28cd41", icon: "👥" }, { label: "Vendedores", value: "4", color: "#ff9500", icon: "👤" }, { label: "Conversão Média", value: "58%", color: "#8e44ef", icon: "📊" }]
-        ).map((k, i) => <KpiCard key={i} {...k} />)}
+        <KpiCard label="Clientes" value={c.toLocaleString("pt-BR")} sub="cadastrados" color="#28cd41" icon="👥" />
+        <KpiCard label="Pedidos" value={p.toLocaleString("pt-BR")} sub="aprovados" color="#4545F5" icon="🛍" />
+        <KpiCard label="Receita" value={`R$ ${(r/1000).toFixed(1)}k`} sub="total aprovada" color="#8e44ef" icon="💰" />
+        <KpiCard label="Ticket Médio" value={`R$ ${tm.toFixed(0)}`} sub="por pedido" color="#ff9500" icon="📊" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 16 }}>
         <div className="ap-card" style={{ padding: "22px 24px" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{isVend ? "Meu Faturamento" : "Faturamento do Time"}</div>
-          <div style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>Últimos 5 meses</div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={DB_FALLBACK.revHist}>
-              <defs>
-                <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4545F5" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#4545F5" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="m" tick={{ fill: T.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis hide />
-              <Tooltip content={<ApTooltip />} />
-              <Area type="monotone" dataKey="v" name="Receita" stroke="#4545F5" strokeWidth={2.5} fill="url(#gr)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Receita Mensal</div>
+          <div style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>Últimos meses — dados reais Shopify</div>
+          {porMes.length > 0 ? (
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={porMes}>
+                <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4545F5" stopOpacity={0.2}/><stop offset="95%" stopColor="#4545F5" stopOpacity={0}/></linearGradient></defs>
+                <XAxis dataKey="m" tick={{ fill: T.muted, fontSize: 11 }} axisLine={false} tickLine={false}/>
+                <YAxis hide/>
+                <Tooltip content={<ApTooltip/>}/>
+                <Area type="monotone" dataKey="v" name="Receita" stroke="#4545F5" strokeWidth={2.5} fill="url(#gr)" dot={false}/>
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Sem dados de receita</div>}
         </div>
+
         <div className="ap-card" style={{ padding: "22px 24px" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Alertas Inteligentes</div>
-          {[{ icon: "⚠️", msg: "3 clientes estão em risco de churn", c: "#ff9500" }, { icon: "🎂", msg: "2 aniversariantes esta semana", c: "#8e44ef" }, { icon: "📉", msg: "1 vendedor abaixo da meta", c: "#ff3b30" }, { icon: "✅", msg: "Maria Sales: 96% da meta atingida", c: "#28cd41" }].map((al, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, padding: "9px 0", borderBottom: i < 3 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
-              <span style={{ fontSize: 16 }}>{al.icon}</span>
-              <span style={{ fontSize: 13, color: T.sub, flex: 1 }}>{al.msg}</span>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: al.c, marginTop: 5, flexShrink: 0 }} />
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Segmentação RFM</div>
+          {Object.entries(RFM_CFG).map(([key, cfg], i) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 4 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
+              <Chip label={cfg.label} c={cfg.c} bg={cfg.bg}/>
+              <div style={{ flex: 1 }}><ProgressBar value={rfm[key] || 0} max={totalRfm} height={5}/></div>
+              <span className="num" style={{ fontSize: 12, fontWeight: 700, color: cfg.c }}>{(rfm[key] || 0).toLocaleString("pt-BR")}</span>
             </div>
           ))}
         </div>
       </div>
+
+      {topCli.length > 0 && (
+        <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "16px 22px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>Top 10 Clientes por Receita</span>
+            <span style={{ fontSize: 12, color: T.muted }}>dados reais Shopify</span>
+          </div>
+          {topCli.map((cl, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 22px", borderBottom: i < topCli.length-1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
+              <span className="num" style={{ fontSize: 11, color: T.muted, fontWeight: 700, width: 20, textAlign: "right" }}>{i+1}</span>
+              <Avatar nome={cl.nome} size={32}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{cl.nome}</div>
+                <div style={{ fontSize: 11, color: T.muted }}>{cl.email || "—"} · {cl.total_pedidos} pedidos</div>
+              </div>
+              <Chip label={RFM_CFG[cl.segmento_rfm]?.label || "—"} c={RFM_CFG[cl.segmento_rfm]?.c} bg={RFM_CFG[cl.segmento_rfm]?.bg}/>
+              <span className="num" style={{ fontSize: 14, fontWeight: 700, color: "#4545F5" }}>R$ {(+cl.receita_total).toLocaleString("pt-BR")}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function MarcaEquipe({ isAdmin, user }) {
   const marcaId = user?.marca_id || user?.marcaId;
-  const { data: sbUsuarios, loading: loadingUsers } = useSupabaseQuery("profiles", marcaId ? { eq: { marca_id: marcaId } } : {});
+  const { data: sbUsuarios, loading: loadingUsers, refetch: refetchUsers } = useSupabaseQuery("users", marcaId ? { eq: { marca_id: marcaId } } : {});
   const [localUsuarios, setLocalUsuarios] = useState(DB_FALLBACK.usuarios);
 
   const usuarios = sbUsuarios && sbUsuarios.length > 0 ? sbUsuarios : localUsuarios;
@@ -861,8 +835,13 @@ function MarcaEquipe({ isAdmin, user }) {
 }
 
 function MarcaRanking({ user }) {
+  const marcaId = user?.marca_id || user?.marcaId;
+  const { data: apiUsers } = useSupabaseQuery("users", marcaId ? { eq: { marca_id: marcaId } } : {});
   const isVend = user.role === "vendedor";
-  const allVends = DB_FALLBACK.usuarios.filter((u) => u.role === "vendedor").sort((a, b) => b.fat - a.fat);
+
+  const allVends = (apiUsers.length > 0 ? apiUsers : DB_FALLBACK.usuarios)
+    .filter((u) => u.role === "vendedor")
+    .sort((a, b) => (+(b.meta_mensal || b.meta || 0)) - (+(a.meta_mensal || a.meta || 0)));
   const list = isVend ? allVends.filter((v) => v.nome === user.nome) : allVends;
   const medals = ["🥇", "🥈", "🥉"];
 
@@ -870,20 +849,23 @@ function MarcaRanking({ user }) {
     <div className="fade-up">
       <SectionHeader tag="Performance" title="Ranking da Equipe" />
       {isVend && <div style={{ background: "#eeeeff", border: "1px solid #4545F520", borderRadius: 12, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#4545F5", fontWeight: 500 }}>👤 Você está visualizando apenas sua posição no ranking.</div>}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(list.length, 3)},1fr)`, gap: 14 }}>
+      {list.length === 0 && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Nenhum vendedor encontrado.</div>}
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(list.length || 1, 3)},1fr)`, gap: 14 }}>
         {list.map((v, i) => {
           const globalIdx = allVends.findIndex((x) => x.id === v.id);
-          const pct = v.meta > 0 ? Math.min(Math.round((v.fat / v.meta) * 100), 100) : 0;
+          const meta = +(v.meta_mensal || v.meta || 0);
+          const fat = +(v.fat || 0);
+          const pct = meta > 0 ? Math.min(Math.round((fat / meta) * 100), 100) : 0;
           const bC = pct >= 100 ? "#28cd41" : pct >= 70 ? "#4545F5" : "#ff9500";
           return (
             <div key={v.id} className="ap-card" style={{ padding: 24, textAlign: "center", border: globalIdx === 0 ? "1.5px solid #ffd60a40" : "none" }}>
               <div style={{ fontSize: 32, marginBottom: 10 }}>{medals[globalIdx] || `${globalIdx + 1}°`}</div>
               <Avatar nome={v.nome} size={48} />
               <div style={{ fontSize: 15, fontWeight: 700, margin: "10px 0 2px" }}>{v.nome}</div>
-              <div style={{ fontSize: 11, color: T.muted, marginBottom: 12 }}>{v.loja}</div>
-              <div className="num" style={{ fontSize: 24, fontWeight: 800, color: bC }}>R$ {(v.fat / 1000).toFixed(1)}k</div>
-              <div style={{ margin: "10px 0 4px" }}><ProgressBar value={v.fat} max={v.meta} height={6} /></div>
-              <div style={{ fontSize: 11, color: bC, fontWeight: 700 }}>{pct}% da meta</div>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 12 }}>{v.loja || "Todas"}</div>
+              <div className="num" style={{ fontSize: 24, fontWeight: 800, color: bC }}>R$ {(fat / 1000).toFixed(1)}k</div>
+              <div style={{ margin: "10px 0 4px" }}><ProgressBar value={fat} max={meta || 1} height={6} /></div>
+              <div style={{ fontSize: 11, color: bC, fontWeight: 700 }}>{pct}% da meta{meta > 0 ? ` (R$ ${(meta/1000).toFixed(0)}k)` : ""}</div>
             </div>
           );
         })}
@@ -893,114 +875,336 @@ function MarcaRanking({ user }) {
 }
 
 function MarcaClientes({ user }) {
-  const marcaId = user.marca_id || user.marcaId;
-  const eqFilter = user.role === "vendedor" ? { vendedor_id: user.id } : (marcaId ? { marca_id: marcaId } : {});
-  const { data: sbClientes, loading: loadingClientes } = useSupabaseQuery("clientes", { eq: eqFilter });
+  const [allClientes, setAllClientes] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("todos");
+  const [search, setSearch] = useState("");
+  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [clienteDetail, setClienteDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const fallbackList = user.role === "vendedor" ? DB_FALLBACK.clientes.filter((c) => c.vend === user.nome) : DB_FALLBACK.clientes;
-  const list = sbClientes && sbClientes.length > 0 ? sbClientes : fallbackList;
+  useEffect(() => {
+    const opts = { limit: 250 };
+    if (filter !== "todos") opts.segmento_rfm = filter;
+    if (search) opts.search = search;
+    setLoading(true);
+    fetchData("clientes", opts).then(r => { setAllClientes(r.data || []); setTotal(r.total || 0); setLoading(false); }).catch(() => setLoading(false));
+  }, [filter, search]);
+
+  const customers = allClientes;
+  const counts = { customers: total };
+
+  // API already filters by segmento_rfm and search, no need to re-filter client-side
+  const filtered = customers;
 
   return (
     <div className="fade-up">
-      <SectionHeader tag="CRM" title={user.role === "vendedor" ? "Meus Clientes" : "Base de Clientes"} action={<button className="ap-btn ap-btn-primary">+ Novo Cliente</button>} />
-      <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr style={{ borderBottom: "1px solid rgba(0,0,0,0.07)", background: "rgba(0,0,0,0.02)" }}>{["Cliente", "Email", "RFM", "Recência", "Pedidos", "Receita", "Vendedor"].map((h) => <th key={h} className="ap-th">{h}</th>)}</tr></thead>
-          <tbody>
-            {list.map((c, i) => {
-              const segKey = c.segmento_rfm || c.seg;
-              return (
-                <tr key={i} className="ap-tr">
-                  <td className="ap-td"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><Avatar nome={c.nome} size={32} /><div style={{ fontSize: 14, fontWeight: 700 }}>{c.nome}</div></div></td>
-                  <td className="ap-td"><span style={{ fontSize: 13, color: T.sub }}>{c.email}</span></td>
-                  <td className="ap-td"><Chip label={RFM_CFG[segKey]?.label} c={RFM_CFG[segKey]?.c} bg={RFM_CFG[segKey]?.bg} /></td>
-                  <td className="ap-td"><span className="num" style={{ fontSize: 13, color: (c.recencia_dias || c.rec) > 90 ? "#ff3b30" : T.sub }}>{c.recencia_dias || c.rec}d</span></td>
-                  <td className="ap-td"><span className="num" style={{ fontSize: 13 }}>{c.pedidos}</span></td>
-                  <td className="ap-td"><span className="num" style={{ fontWeight: 700, fontSize: 13 }}>R$ {(c.receita_total || c.receita || 0).toLocaleString("pt-BR")}</span></td>
-                  <td className="ap-td"><span style={{ fontSize: 13, color: T.sub }}>{c.vendedor_nome || c.vend}</span></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <SectionHeader tag="CRM" title="Base de Clientes" action={<span className="num" style={{ fontSize: 13, color: T.muted }}>{counts.customers} total no Shopify · {customers.length} carregados</span>} />
+
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="seg">
+          {[{ k: "todos", l: "Todos" }, ...Object.entries(RFM_CFG).map(([k, v]) => ({ k, l: v.label }))].map((f) => (
+            <button key={f.k} className={`seg-btn ${filter === f.k ? "on" : ""}`} onClick={() => setFilter(f.k)}>{f.l}</button>
+          ))}
+        </div>
+        <input className="ap-inp" style={{ maxWidth: 220, padding: "8px 12px", fontSize: 13 }} placeholder="🔍 Buscar por nome ou email..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
+
+      {loading && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>⏳ Carregando clientes do Shopify...</div>}
+
+      {!loading && filtered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Nenhum cliente encontrado.</div>}
+
+      {!loading && filtered.length > 0 && (
+        <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr style={{ borderBottom: "1px solid rgba(0,0,0,0.07)", background: "rgba(0,0,0,0.02)" }}>{["Cliente", "Email", "Telefone", "RFM", "Recência", "Pedidos", "Receita"].map((h) => <th key={h} className="ap-th">{h}</th>)}</tr></thead>
+            <tbody>
+              {filtered.slice(0, 100).map((c, i) => {
+                const segKey = c.segmento_rfm;
+                const rec = c.recencia_dias ?? 999;
+                const ped = c.total_pedidos ?? 0;
+                const rec_total = +(c.receita_total ?? 0);
+                return (
+                  <tr key={i} className="ap-tr" style={{ cursor: "pointer" }} onClick={() => setSelectedCliente(c.id)}>
+                    <td className="ap-td"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><Avatar nome={c.nome} size={32} /><div style={{ fontSize: 14, fontWeight: 700 }}>{c.nome}</div></div></td>
+                    <td className="ap-td"><span style={{ fontSize: 13, color: T.sub }}>{c.email || "—"}</span></td>
+                    <td className="ap-td"><span style={{ fontSize: 13, color: T.sub }}>{c.telefone || "—"}</span></td>
+                    <td className="ap-td"><Chip label={RFM_CFG[segKey]?.label || "—"} c={RFM_CFG[segKey]?.c} bg={RFM_CFG[segKey]?.bg} /></td>
+                    <td className="ap-td"><span className="num" style={{ fontSize: 13, color: rec > 90 ? "#ff3b30" : T.sub }}>{rec < 999 ? `${rec}d` : "—"}</span></td>
+                    <td className="ap-td"><span className="num" style={{ fontSize: 13 }}>{ped}</span></td>
+                    <td className="ap-td"><span className="num" style={{ fontWeight: 700, fontSize: 13 }}>R$ {rec_total.toLocaleString("pt-BR")}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filtered.length > 100 && <div style={{ padding: "12px 22px", background: "rgba(0,0,0,0.02)", fontSize: 12, color: T.muted, textAlign: "center" }}>Mostrando 100 de {filtered.length} clientes</div>}
+        </div>
+      )}
+
+      {selectedCliente && <ClienteDetailModal clienteId={selectedCliente} onClose={() => { setSelectedCliente(null); setClienteDetail(null); }} />}
     </div>
+  );
+}
+
+function ClienteDetailModal({ clienteId, onClose }) {
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchClienteDetail(clienteId)
+      .then((d) => { setDetail(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [clienteId]);
+
+  const c = detail?.cliente;
+  const pedidos = detail?.pedidos || [];
+  const timeline = detail?.timeline || [];
+  const mensagens = detail?.mensagens || [];
+
+  return (
+    <Modal title={c?.nome || "Cliente"} subtitle={c?.email || ""} onClose={onClose} width={680}>
+      {loading && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>⏳ Carregando detalhes...</div>}
+      {!loading && !c && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Cliente não encontrado.</div>}
+      {!loading && c && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Info grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            {[
+              ["Segmento RFM", RFM_CFG[c.segmento_rfm]?.label || c.segmento_rfm || "—"],
+              ["Recência", c.recencia_dias != null ? `${c.recencia_dias} dias` : "—"],
+              ["Total Pedidos", c.total_pedidos ?? "—"],
+              ["Receita Total", `R$ ${(+(c.receita_total || 0)).toLocaleString("pt-BR")}`],
+              ["Telefone", c.telefone || "—"],
+              ["Cadastro", c.created_at ? new Date(c.created_at).toLocaleDateString("pt-BR") : "—"],
+            ].map(([k, v], i) => (
+              <div key={i} style={{ background: "rgba(0,0,0,0.03)", borderRadius: 10, padding: "10px 14px" }}>
+                <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>{k}</div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {c.notas && (
+            <div style={{ background: "#fff3e0", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#cc7700" }}>
+              <strong>Notas:</strong> {c.notas}
+            </div>
+          )}
+
+          {/* Pedidos */}
+          {pedidos.length > 0 && (
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Últimos Pedidos ({pedidos.length})</div>
+              <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr style={{ background: "rgba(0,0,0,0.02)", borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
+                    {["Data", "Valor", "Status"].map((h) => <th key={h} className="ap-th">{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {pedidos.slice(0, 10).map((p, i) => (
+                      <tr key={i} className="ap-tr">
+                        <td className="ap-td"><span style={{ fontSize: 12, color: T.sub }}>{p.created_at ? new Date(p.created_at).toLocaleDateString("pt-BR") : "—"}</span></td>
+                        <td className="ap-td"><span className="num" style={{ fontSize: 13, fontWeight: 700 }}>R$ {(+(p.valor_total || 0)).toLocaleString("pt-BR")}</span></td>
+                        <td className="ap-td"><Chip label={p.status || "—"} c={p.status === "pago" ? "#28cd41" : "#ff9500"} bg={p.status === "pago" ? "#e9fbed" : "#fff3e0"} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          {timeline.length > 0 && (
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Timeline</div>
+              {timeline.slice(0, 10).map((ev, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < Math.min(timeline.length, 10) - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: "#eeeeff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>
+                    {ev.tipo === "compra" ? "🛍" : ev.tipo === "mensagem" ? "💬" : ev.tipo === "tarefa" ? "📋" : "📌"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{ev.titulo}</div>
+                    {ev.descricao && <div style={{ fontSize: 12, color: T.sub }}>{ev.descricao}</div>}
+                    <div style={{ fontSize: 10, color: T.muted }}>{ev.created_at ? new Date(ev.created_at).toLocaleString("pt-BR") : ""}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
   );
 }
 
 function MarcaAgenda({ user }) {
   const marcaId = user?.marca_id || user?.marcaId;
-  const { data: sbTarefas } = useSupabaseQuery("tarefas", marcaId ? { eq: { marca_id: marcaId } } : {});
+  const { data: sbTarefas, refetch: refetchTarefas } = useSupabaseQuery("tarefas", marcaId ? { eq: { marca_id: marcaId } } : {});
+  const [showModal, setShowModal] = useState(false);
 
-  const fallbackTasks = [
-    { id: 1, cliente: "Marina Oliveira", tipo: "WhatsApp", obs: "Retornar sobre proposta VIP", status: "pendente", hora: "14:30" },
-    { id: 2, cliente: "Rafael Costa", tipo: "Ligação", obs: "Confirmar pedido e prazo", status: "pendente", hora: "15:00" },
-    { id: 3, cliente: "Beatriz Lima", tipo: "Presencial", obs: "Visita programada na loja", status: "realizado", hora: "10:00" },
-    { id: 4, cliente: "Carlos Mendes", tipo: "Email", obs: "Enviar catálogo de primavera", status: "pendente", hora: "16:00" },
-  ];
+  const tasks = sbTarefas && sbTarefas.length > 0 ? sbTarefas : [];
 
-  const [tasks, setTasks] = useState(fallbackTasks);
+  const ICONS = { whatsapp: "💬", ligacao: "📞", presencial: "🤝", email: "✉️", outro: "📋" };
 
-  useEffect(() => {
-    if (sbTarefas && sbTarefas.length > 0) setTasks(sbTarefas);
-  }, [sbTarefas]);
+  const toggle = async (t) => {
+    try {
+      await updateRecord("tarefas", t.id, { concluida: !t.concluida });
+      await refetchTarefas();
+    } catch (e) {
+      console.error("Erro ao atualizar tarefa:", e);
+    }
+  };
 
-  const ICONS = { WhatsApp: "💬", Ligação: "📞", Presencial: "🤝", Email: "✉️" };
-  const toggle = (id) => setTasks((a) => a.map((t) => t.id === id ? { ...t, status: t.status === "realizado" ? "pendente" : "realizado" } : t));
+  const vencidos = tasks.filter((t) => !t.concluida && t.data_limite && new Date(t.data_limite) < new Date()).length;
+
+  function NovaTarefa({ onClose }) {
+    const [f, setF] = useState({ titulo: "", descricao: "", tipo: "outro", data_limite: "" });
+    const s = (k, v) => setF((x) => ({ ...x, [k]: v }));
+    const [saving, setSaving] = useState(false);
+    return (
+      <Modal title="Nova Tarefa" subtitle="Crie uma nova tarefa para a equipe" onClose={onClose} width={480}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div><Lbl>Título *</Lbl><input className="ap-inp" value={f.titulo} onChange={(e) => s("titulo", e.target.value)} placeholder="Ex: Retornar cliente VIP" /></div>
+          <div><Lbl>Descrição</Lbl><input className="ap-inp" value={f.descricao} onChange={(e) => s("descricao", e.target.value)} placeholder="Detalhes da tarefa..." /></div>
+          <FormRow>
+            <div>
+              <Lbl>Tipo</Lbl>
+              <select className="ap-sel" value={f.tipo} onChange={(e) => s("tipo", e.target.value)}>
+                {[["whatsapp","WhatsApp"],["ligacao","Ligação"],["email","Email"],["presencial","Presencial"],["outro","Outro"]].map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+            <div><Lbl>Data Limite</Lbl><input className="ap-inp" type="datetime-local" value={f.data_limite} onChange={(e) => s("data_limite", e.target.value)} /></div>
+          </FormRow>
+          <button className="ap-btn ap-btn-primary" disabled={!f.titulo || saving} onClick={async () => {
+            setSaving(true);
+            try {
+              await createRecord("tarefas", {
+                titulo: f.titulo, descricao: f.descricao, tipo: f.tipo,
+                data_limite: f.data_limite || null, concluida: false,
+                marca_id: marcaId, responsavel_id: user.id,
+              });
+              await refetchTarefas();
+              onClose();
+            } catch (e) { console.error(e); }
+            setSaving(false);
+          }}>{saving ? "Salvando…" : "Criar Tarefa →"}</button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <div className="fade-up">
-      <SectionHeader tag="Atendimentos" title="Agenda" action={<button className="ap-btn ap-btn-primary">+ Nova Tarefa</button>} />
+      <SectionHeader tag="Atendimentos" title="Agenda" action={<button className="ap-btn ap-btn-primary" onClick={() => setShowModal(true)}>+ Nova Tarefa</button>} />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 20 }}>
-        <KpiCard label="Pendentes" value={tasks.filter((t) => t.status === "pendente").length} color="#ff9500" icon="⏰" />
-        <KpiCard label="Concluídos" value={tasks.filter((t) => t.status === "realizado").length} color="#28cd41" icon="✅" />
-        <KpiCard label="Vencidos" value="0" color="#ff3b30" icon="❌" />
+        <KpiCard label="Pendentes" value={tasks.filter((t) => !t.concluida).length} color="#ff9500" icon="⏰" />
+        <KpiCard label="Concluídos" value={tasks.filter((t) => t.concluida).length} color="#28cd41" icon="✅" />
+        <KpiCard label="Vencidos" value={vencidos} color="#ff3b30" icon="❌" />
       </div>
-      {tasks.map((t, i) => (
-        <div key={i} className="ap-card" style={{ display: "flex", gap: 14, alignItems: "center", padding: "14px 18px", marginBottom: 10 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: t.status === "realizado" ? "#e9fbed" : "#eeeeff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{ICONS[t.tipo]}</div>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{t.cliente}</div><div style={{ fontSize: 12, color: T.sub }}>{t.tipo} · {t.hora} · {t.obs}</div></div>
-          <Chip label={t.status === "realizado" ? "Concluído" : "Pendente"} c={t.status === "realizado" ? "#28cd41" : "#ff9500"} bg={t.status === "realizado" ? "#e9fbed" : "#fff3e0"} />
-          <button className="ap-btn ap-btn-secondary ap-btn-sm" onClick={() => toggle(t.id)}>{t.status === "realizado" ? "Reabrir" : "Concluir"}</button>
-        </div>
-      ))}
+      {tasks.length === 0 && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Nenhuma tarefa encontrada. Crie uma nova!</div>}
+      {tasks.map((t, i) => {
+        const tipoKey = (t.tipo || "outro").toLowerCase();
+        const dataStr = t.data_limite ? new Date(t.data_limite).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+        return (
+          <div key={t.id || i} className="ap-card" style={{ display: "flex", gap: 14, alignItems: "center", padding: "14px 18px", marginBottom: 10 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: t.concluida ? "#e9fbed" : "#eeeeff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{ICONS[tipoKey] || "📋"}</div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{t.titulo}</div><div style={{ fontSize: 12, color: T.sub }}>{t.tipo || ""}{dataStr ? ` · ${dataStr}` : ""}{t.descricao ? ` · ${t.descricao}` : ""}</div></div>
+            <Chip label={t.concluida ? "Concluído" : "Pendente"} c={t.concluida ? "#28cd41" : "#ff9500"} bg={t.concluida ? "#e9fbed" : "#fff3e0"} />
+            <button className="ap-btn ap-btn-secondary ap-btn-sm" onClick={() => toggle(t)}>{t.concluida ? "Reabrir" : "Concluir"}</button>
+          </div>
+        );
+      })}
+      {showModal && <NovaTarefa onClose={() => setShowModal(false)} />}
     </div>
   );
 }
 
 function MarcaCampanhas({ user }) {
   const marcaId = user?.marca_id || user?.marcaId;
-  const { data: sbCampanhas } = useSupabaseQuery("campanhas", marcaId ? { eq: { marca_id: marcaId } } : {});
+  const { data: sbCampanhas, refetch: refetchCampanhas } = useSupabaseQuery("campanhas", marcaId ? { eq: { marca_id: marcaId } } : {});
+  const [showModal, setShowModal] = useState(false);
 
-  const fallbackCps = [
-    { id: 1, nome: "Reativação 90 dias", canal: "WhatsApp", status: "enviada", env: 247, receita: 18420 },
-    { id: 2, nome: "Black Friday Antecipada", canal: "Email", status: "enviada", env: 523, receita: 42800 },
-    { id: 3, nome: "Coleção Primavera 2026", canal: "SMS", status: "rascunho", env: 0, receita: 0 },
-  ];
+  const cps = sbCampanhas && sbCampanhas.length > 0 ? sbCampanhas : [];
 
-  const [cps, setCps] = useState(fallbackCps);
+  const CANAL_ICON = { whatsapp: "💬", email: "✉️", sms: "📱" };
+  const CANAL_COLOR = { whatsapp: "#128C7E", email: "#4545F5", sms: "#ff9500" };
+  const CANAL_BG = { whatsapp: "#e9fbed", email: "#eeeeff", sms: "#fff3e0" };
 
-  useEffect(() => {
-    if (sbCampanhas && sbCampanhas.length > 0) setCps(sbCampanhas);
-  }, [sbCampanhas]);
+  const handleSend = async (c) => {
+    try {
+      await updateRecord("campanhas", c.id, { status: "ativa" });
+      await refetchCampanhas();
+    } catch (e) { console.error(e); }
+  };
+
+  function NovaCampanha({ onClose }) {
+    const [f, setF] = useState({ nome: "", tipo: "whatsapp", segmento_alvo: "", mensagem: "" });
+    const s = (k, v) => setF((x) => ({ ...x, [k]: v }));
+    const [saving, setSaving] = useState(false);
+    return (
+      <Modal title="Nova Campanha" subtitle="Configure uma nova campanha de marketing" onClose={onClose} width={520}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div><Lbl>Nome da Campanha *</Lbl><input className="ap-inp" value={f.nome} onChange={(e) => s("nome", e.target.value)} placeholder="Ex: Reativação 90 dias" /></div>
+          <FormRow>
+            <div>
+              <Lbl>Canal</Lbl>
+              <select className="ap-sel" value={f.tipo} onChange={(e) => s("tipo", e.target.value)}>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+              </select>
+            </div>
+            <div><Lbl>Segmento Alvo</Lbl><input className="ap-inp" value={f.segmento_alvo} onChange={(e) => s("segmento_alvo", e.target.value)} placeholder="Ex: campiao, em_risco" /></div>
+          </FormRow>
+          <div><Lbl>Mensagem</Lbl><textarea className="ap-inp" rows={3} value={f.mensagem} onChange={(e) => s("mensagem", e.target.value)} placeholder="Texto da campanha..." style={{ resize: "vertical" }} /></div>
+          <button className="ap-btn ap-btn-primary" disabled={!f.nome || saving} onClick={async () => {
+            setSaving(true);
+            try {
+              await createRecord("campanhas", {
+                nome: f.nome, tipo: f.tipo, segmento_alvo: f.segmento_alvo,
+                mensagem: f.mensagem, status: "rascunho", enviados: 0,
+                abertos: 0, convertidos: 0, receita: 0, marca_id: marcaId,
+              });
+              await refetchCampanhas();
+              onClose();
+            } catch (e) { console.error(e); }
+            setSaving(false);
+          }}>{saving ? "Salvando…" : "Criar Campanha →"}</button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <div className="fade-up">
-      <SectionHeader tag="Marketing" title="Campanhas" action={<button className="ap-btn ap-btn-primary">+ Nova Campanha</button>} />
-      {cps.map((c, i) => (
-        <div key={i} className="ap-card" style={{ padding: "18px 22px", marginBottom: 10, display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: c.canal === "WhatsApp" ? "#e9fbed" : c.canal === "Email" ? "#eeeeff" : "#fff3e0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{c.canal === "WhatsApp" ? "💬" : "✉️"}</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{c.nome}</div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <Chip label={c.canal} c={c.canal === "WhatsApp" ? "#128C7E" : "#4545F5"} bg={c.canal === "WhatsApp" ? "#e9fbed" : "#eeeeff"} />
-              <Chip label={c.status === "enviada" ? "Enviada" : "Rascunho"} c={c.status === "enviada" ? "#28cd41" : "#aeaeb2"} bg={c.status === "enviada" ? "#e9fbed" : "#f5f5f7"} />
-              {(c.env || 0) > 0 && <span style={{ fontSize: 12, color: T.muted }}>{c.env} enviados · <span style={{ color: "#28cd41", fontWeight: 600 }}>R$ {(c.receita || 0).toLocaleString("pt-BR")}</span></span>}
+      <SectionHeader tag="Marketing" title="Campanhas" action={<button className="ap-btn ap-btn-primary" onClick={() => setShowModal(true)}>+ Nova Campanha</button>} />
+      {cps.length === 0 && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Nenhuma campanha encontrada. Crie uma nova!</div>}
+      {cps.map((c, i) => {
+        const tipoKey = (c.tipo || "email").toLowerCase();
+        const canalLabel = tipoKey === "whatsapp" ? "WhatsApp" : tipoKey === "email" ? "Email" : "SMS";
+        const statusLabel = c.status === "ativa" || c.status === "enviada" ? "Enviada" : c.status === "concluida" ? "Concluída" : "Rascunho";
+        const statusC = c.status === "ativa" || c.status === "enviada" || c.status === "concluida" ? "#28cd41" : "#aeaeb2";
+        const statusBg = c.status === "ativa" || c.status === "enviada" || c.status === "concluida" ? "#e9fbed" : "#f5f5f7";
+        return (
+          <div key={c.id || i} className="ap-card" style={{ padding: "18px 22px", marginBottom: 10, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: CANAL_BG[tipoKey] || "#eeeeff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{CANAL_ICON[tipoKey] || "✉️"}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{c.nome}</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <Chip label={canalLabel} c={CANAL_COLOR[tipoKey] || "#4545F5"} bg={CANAL_BG[tipoKey] || "#eeeeff"} />
+                <Chip label={statusLabel} c={statusC} bg={statusBg} />
+                {(c.enviados || 0) > 0 && <span style={{ fontSize: 12, color: T.muted }}>{c.enviados} enviados · <span style={{ color: "#28cd41", fontWeight: 600 }}>R$ {(+(c.receita || 0)).toLocaleString("pt-BR")}</span></span>}
+              </div>
             </div>
+            {c.status === "rascunho" && <button className="ap-btn ap-btn-primary ap-btn-sm" onClick={() => handleSend(c)}>Enviar Agora</button>}
           </div>
-          {c.status === "rascunho" && <button className="ap-btn ap-btn-primary ap-btn-sm" onClick={() => setCps((a) => a.map((x) => x.id === c.id ? { ...x, status: "enviada" } : x))}>Enviar Agora</button>}
-        </div>
-      ))}
+        );
+      })}
+      {showModal && <NovaCampanha onClose={() => setShowModal(false)} />}
     </div>
   );
 }
@@ -1105,7 +1309,6 @@ function PortalMarca({ user, onLogout }) {
   const [page, setPage] = useState("dashboard");
   const isAdmin = user.role === "admin";
   const isSup = user.role === "supervisor" || isAdmin;
-
   return (
     <div style={{ display: "flex", height: "100vh", background: T.bg, overflow: "hidden" }}>
       <style>{STYLES}</style>
@@ -1424,7 +1627,7 @@ function MarcaIntegracoes({ user }) {
 function MarcaDados({ user }) {
   const marcaId = user.marca_id || user.marcaId;
   const { data: dbClientes } = useSupabaseQuery("clientes", { eq: { marca_id: marcaId } });
-  const { data: dbVendedores } = useSupabaseQuery("profiles", { eq: { marca_id: marcaId } });
+  const { data: dbVendedores } = useSupabaseQuery("users", { eq: { marca_id: marcaId } });
   const { data: dbCampanhas } = useSupabaseQuery("campanhas", { eq: { marca_id: marcaId } });
 
   const clientes = dbClientes.length > 0 ? dbClientes : DB_FALLBACK.clientes;
@@ -1518,9 +1721,37 @@ function MarcaDados({ user }) {
     else if (ext === "xlsx" || ext === "xls") { try { const XLSX = await loadSheetJS(); const wb = XLSX.read(await file.arrayBuffer(), { type: "array" }); setImportRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])); } catch { setImportErr("Erro ao ler XLSX."); } }
     else { setImportErr("Formato não suportado. Use .csv, .xlsx ou .xls"); }
   };
-  const doImport = () => {
+  const [importProgress, setImportProgress] = useState(0);
+  const doImport = async () => {
+    if (!importRows || importRows.length === 0) return;
     setImporting(true);
-    setTimeout(() => { setImporting(false); setImportSaved(true); setTimeout(() => { setImportSaved(false); setImportFile(null); setImportRows(null); }, 3000); }, 1200);
+    setImportProgress(0);
+    let success = 0;
+    let errors = 0;
+    for (let i = 0; i < importRows.length; i++) {
+      try {
+        const row = importRows[i];
+        // Map common CSV fields to DB fields
+        const record = {
+          nome: row.nome || row.name || "",
+          email: row.email || "",
+          telefone: row.telefone || row.phone || row.tel || "",
+          marca_id: marcaId || null,
+        };
+        if (row.segmento || row.segmento_rfm) record.segmento_rfm = row.segmento_rfm || row.segmento;
+        if (row.cpf) record.tags = [row.cpf];
+        await createRecord("clientes", record);
+        success++;
+      } catch (e) {
+        errors++;
+        console.error("Import row error:", e);
+      }
+      setImportProgress(Math.round(((i + 1) / importRows.length) * 100));
+    }
+    setImporting(false);
+    setImportSaved(true);
+    setImportProgress(0);
+    setTimeout(() => { setImportSaved(false); setImportFile(null); setImportRows(null); }, 4000);
   };
 
   return (
@@ -1597,7 +1828,7 @@ function MarcaDados({ user }) {
             <div className="ap-card" style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
               <div style={{ padding: "16px 22px", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div><span style={{ fontSize: 15, fontWeight: 700 }}>Prévia da Importação</span><span style={{ fontSize: 12, color: T.muted, marginLeft: 10 }}>{importRows.length} registros</span></div>
-                <button className="ap-btn ap-btn-primary" disabled={importing} onClick={doImport}>{importing ? "Importando…" : `✓ Importar ${importRows.length} registros`}</button>
+                <button className="ap-btn ap-btn-primary" disabled={importing} onClick={doImport}>{importing ? `Importando… ${importProgress}%` : `✓ Importar ${importRows.length} registros`}</button>
               </div>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1639,24 +1870,11 @@ export default function App() {
   const [user, setUser] = useState(null);
 
   const handleLogin = async (loginData) => {
-    // Se veio do Supabase com dados reais, buscar profile
-    if (loginData.supabaseUser && loginData.id) {
-      const { data: profile } = await db.from("profiles").select("*").eq("id", loginData.id).single().execute();
-      if (profile) {
-        setUser({
-          ...profile,
-          tipo: profile.role === "owner" ? "owner" : "marca",
-          marcaId: profile.marca_id,
-        });
-        return;
-      }
-    }
-    // Fallback: dados do login demo ou Supabase sem profile
     setUser(loginData);
   };
 
   const handleLogout = () => {
-    supabaseAuth.signOut();
+    apiLogout();
     setUser(null);
   };
 

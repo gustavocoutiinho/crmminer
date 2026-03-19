@@ -283,7 +283,7 @@ const LOGINS = [
   { email:"deborah@lesalis.com.br",         senha:"lesalis2026", tipo:"marca", nome:"Deborah",       role:"admin",      marcaId:"m2" },
   { email:"leonardo@prls.com.br",         senha:"prls2026", tipo:"marca", nome:"Leonardo",    role:"admin",      marcaId:"m2" },
   { email:"squad@minerbz.com.br",         senha:"squad2026",tipo:"marca", nome:"Squad Miner", role:"admin",      marcaId:"m1" },
-{ email:"deborah@lesalis.com.br", senha:"lesalis2026", tipo:"marca", nome:"Deborah", role:"admin", marcaId:"m2" },];
+];
 
 const STATUS_CFG = {
   ativo:   { label:"Ativo",   bg:"#e9fbed", c:"#28cd41" },
@@ -1432,7 +1432,6 @@ function MarcaPipeline({ user }) {
   const [draggedId, setDraggedId] = useState(null);
 
   const dispatchToMakeWebhook = async (lead, newStatus) => {
-    // Fire-and-forget to Make.com Webhook Antigravity v5.0
     try {
       fetch("https://hook.us1.make.com/xxxx_sales_update", {
         method: "POST",
@@ -1442,18 +1441,6 @@ function MarcaPipeline({ user }) {
     } catch(e) {}
   };
 
-  const onDrop = (status) => {
-    if (!draggedId) return;
-    setLeads(prev => prev.map(l => {
-      if (l.id === draggedId && l.status !== status) {
-        dispatchToMakeWebhook(l, status);
-        return { ...l, status };
-      }
-      return l;
-    }));
-    setDraggedId(null);
-  };
-
   const cols = [
     { id: "novos", title: "Novos Leads", color: "#4545F5" },
     { id: "qualificacao", title: "Qualificação", color: "#ff9500" },
@@ -1461,17 +1448,42 @@ function MarcaPipeline({ user }) {
     { id: "ganho", title: "Ganho/Perdido", color: "#28cd41" }
   ];
 
+  const moveLead = (leadId, newStatus) => {
+    setLeads(prev => prev.map(l => {
+      if (l.id === leadId && l.status !== newStatus) {
+        dispatchToMakeWebhook(l, newStatus);
+        return { ...l, status: newStatus };
+      }
+      return l;
+    }));
+  };
+
+  const onDrop = (status) => {
+    if (!draggedId) return;
+    moveLead(draggedId, status);
+    setDraggedId(null);
+  };
+
+  const getNextStatus = (curr) => {
+    const idx = cols.findIndex(c => c.id === curr);
+    return idx < cols.length - 1 ? cols[idx+1].id : null;
+  };
+  const getPrevStatus = (curr) => {
+    const idx = cols.findIndex(c => c.id === curr);
+    return idx > 0 ? cols[idx-1].id : null;
+  };
+
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", animation:"fadeIn .3s ease" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:14 }}>
         <div>
           <h2 style={{ fontSize:24, fontWeight:800, color:"#1d1d1f", letterSpacing:"-0.03em" }}>Pipeline de Vendas</h2>
           <p style={{ color:"#6e6e73", marginTop:4, fontSize:15 }}>Gestão visual de leads e oportunidades focada em WhatsApp.</p>
         </div>
-        <button className="ap-btn ap-btn-primary" style={{ boxShadow:"0 4px 14px rgba(69,69,245,0.3)" }}>+ Novo Lead</button>
+        <button className="ap-btn ap-btn-primary" style={{ boxShadow:"0 4px 14px rgba(69,69,245,0.3)", flexShrink:0 }}>+ Novo Lead</button>
       </div>
 
-      <div style={{ display:"flex", gap:16, flex:1, overflowX:"auto", paddingBottom:16 }}>
+      <div className="custom-scrollbar" style={{ display:"flex", gap:16, flex:1, overflowX:"auto", paddingBottom:16 }}>
         {cols.map(c => (
           <div key={c.id} 
                style={{ flex:"0 0 280px", background:"rgba(0,0,0,0.03)", borderRadius:14, padding:14, display:"flex", flexDirection:"column" }}
@@ -1487,10 +1499,22 @@ function MarcaPipeline({ user }) {
                      className="ap-card fade-up" style={{ padding:16, cursor:"grab", borderLeft:`4px solid ${c.color}`, position:"relative" }}>
                   <div style={{ fontSize:15, fontWeight:700, color:"#1d1d1f", marginBottom:2 }}>{lead.nome}</div>
                   <div style={{ fontSize:14, fontWeight:600, color:"#6e6e73", marginBottom:12 }}>{lead.valor}</div>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
                     <span className="chip" style={{ background:"rgba(0,0,0,0.04)", color:"#8e8e93", fontSize:11 }}>{lead.fonte}</span>
                     <button className="ap-btn-success ap-btn-sm" style={{ padding:"4px 10px", borderRadius:20, fontSize:12 }}>WhatsApp</button>
                   </div>
+                  
+                  {/* MOBILE FALLBACK BUTTONS */}
+                  <div style={{ display:"flex", gap:6, borderTop:"1px solid rgba(0,0,0,0.05)", paddingTop:12 }}>
+                    {getPrevStatus(lead.status) ? (
+                      <button onClick={() => moveLead(lead.id, getPrevStatus(lead.status))} className="ap-btn ap-btn-secondary ap-btn-sm" style={{flex:1, padding: "4px 0", fontSize:12, background:"rgba(0,0,0,0.04)"}}>← Voltar</button>
+                    ) : <div style={{flex:1}}></div>}
+                    
+                    {getNextStatus(lead.status) ? (
+                      <button onClick={() => moveLead(lead.id, getNextStatus(lead.status))} className="ap-btn ap-btn-primary ap-btn-sm" style={{flex:1, padding: "4px 0", fontSize:12, boxShadow:"none"}}>Avançar →</button>
+                    ) : <div style={{flex:1}}></div>}
+                  </div>
+                  
                 </div>
               ))}
             </div>

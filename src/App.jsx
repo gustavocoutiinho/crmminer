@@ -226,12 +226,18 @@ const sbFetch = async (path, opts = {}) => {
 const supabase = {
   auth: {
     signInWithPassword: async ({ email, password }) => {
-      const fakeUser = { id: "123", email, role: "owner" };
-      sessionStorage.setItem("sb_token", "fake-token");
-      sessionStorage.setItem("sb_user", JSON.stringify(fakeUser));
-      return { data: { user: fakeUser }, error: null };
+      const r = await sbFetch("/auth/v1/token?grant_type=password", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+      const data = await r.json();
+      if (!r.ok) return { data: null, error: data };
+      sessionStorage.setItem("sb_token", data.access_token);
+      sessionStorage.setItem("sb_user", JSON.stringify(data.user));
+      return { data: { user: data.user }, error: null };
     },
     signOut: async () => {
+      await sbFetch("/auth/v1/logout", { method: "POST" });
       sessionStorage.removeItem("sb_token");
       sessionStorage.removeItem("sb_user");
     },

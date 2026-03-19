@@ -30,119 +30,134 @@ const T = {
 
 // ── Styles: Apple SF Pro stack, all fixes ────────────────────────────────────
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap');
 
 :root {
-  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-        "Inter", ui-sans-serif, system-ui, sans-serif;
+  --sf: "Outfit", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
   --mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
-  --brand: #4545F5;
-  --rc: 18px;   /* card radius   */
-  --rb: 980px;  /* button radius */
-  --ri: 10px;   /* input radius  */
+  --brand: #0A0A0A;
+  --brand-light: #2A2A2A;
+  --brand-hover: #1A1A1A;
+  --accent: #4545F5;
+  --rc: 24px;   /* card radius */
+  --rb: 12px;   /* button radius */
+  --ri: 14px;   /* input radius */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-blur: blur(40px) saturate(200%);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: var(--sf);
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background-color: #f7f7f9;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(69, 69, 245, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(40, 205, 65, 0.05) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: #111111;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* SF Pro kerning */
-h1,h2,h3 { letter-spacing:-0.03em; }
+/* SF Pro / Outfit kerning */
+h1,h2,h3 { letter-spacing:-0.04em; font-weight: 700; }
 p,span,div,td,th,label { letter-spacing:-0.01em; }
 
-::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.14); border-radius:5px; }
+::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.1); border-radius:10px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(0,0,0,0.2); }
 
 /* Keyframes */
-@keyframes fadeUp  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
-@keyframes scaleIn { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
-@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.45} }
+@keyframes scaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.5} }
 @keyframes spin    { to{transform:rotate(360deg)} }
 
-.fade-up  { animation:fadeUp  .28s cubic-bezier(.34,1.2,.64,1); }
-.fade-in  { animation:fadeIn  .22s ease; }
-.scale-in { animation:scaleIn .22s cubic-bezier(.34,1.2,.64,1); }
+.fade-up  { animation:fadeUp  .4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.fade-in  { animation:fadeIn  .3s ease forwards; }
+.scale-in { animation:scaleIn .4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 /* ── Inputs ── */
 .ap-inp {
-  background:rgba(0,0,0,0.04); border:1.5px solid rgba(0,0,0,0.09);
-  border-radius:var(--ri); padding:10px 14px;
-  font-size:15px; font-family:var(--sf);
-  outline:none; width:100%; color:#1d1d1f; transition:all .18s;
+  background:rgba(255,255,255,0.6); border:1px solid rgba(0,0,0,0.06);
+  border-radius:var(--ri); padding:12px 16px;
+  font-size:15px; font-family:var(--sf); font-weight:500;
+  outline:none; width:100%; color:#111; transition:all .25s ease;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
 }
-.ap-inp:focus { background:#fff; border-color:var(--brand); box-shadow:0 0 0 3.5px rgba(69,69,245,.15); }
-.ap-inp::placeholder { color:#c0c0c5; }
-.ap-inp.mono { font-family:var(--mono); font-size:13px; }
-.ap-inp:read-only { background:rgba(0,0,0,0.03); color:#6e6e73; cursor:default; }
+.ap-inp:focus { background:#fff; border-color:var(--brand); box-shadow:0 0 0 4px rgba(0,0,0,0.05); }
+.ap-inp::placeholder { color:#a1a1aa; font-weight:400; }
+.ap-inp.mono { font-family:var(--mono); font-size:14px; }
+.ap-inp:read-only { background:rgba(0,0,0,0.02); color:#71717a; cursor:default; }
 
 .ap-sel {
-  background:rgba(0,0,0,0.04); border:1.5px solid rgba(0,0,0,0.09);
-  border-radius:var(--ri); padding:10px 14px;
-  font-size:15px; font-family:var(--sf);
-  outline:none; width:100%; color:#1d1d1f; cursor:pointer;
-  -webkit-appearance:none; appearance:none;
+  background:rgba(255,255,255,0.6); border:1px solid rgba(0,0,0,0.06);
+  border-radius:var(--ri); padding:12px 16px;
+  font-size:15px; font-family:var(--sf); font-weight:500;
+  outline:none; width:100%; color:#111; cursor:pointer;
+  -webkit-appearance:none; appearance:none; transition:all .25s ease;
 }
-.ap-sel:focus { border-color:var(--brand); box-shadow:0 0 0 3.5px rgba(69,69,245,.15); }
+.ap-sel:focus { border-color:var(--brand); box-shadow:0 0 0 4px rgba(0,0,0,0.05); }
 
 /* ── Buttons ── */
 .ap-btn {
-  display:inline-flex; align-items:center; justify-content:center; gap:6px;
-  padding:10px 20px; border-radius:var(--rb);
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 24px; border-radius:var(--rb);
   font-size:15px; font-weight:600; cursor:pointer; font-family:var(--sf);
-  transition:all .18s cubic-bezier(.34,1.2,.64,1); border:none; white-space:nowrap;
-  letter-spacing:-0.01em;
+  transition:all .25s cubic-bezier(0.16, 1, 0.3, 1); border:none; white-space:nowrap;
+  letter-spacing:-0.01em; outline:none;
 }
-.ap-btn:active:not(:disabled) { transform:scale(0.97); }
-.ap-btn:disabled { opacity:.38; cursor:not-allowed; }
+.ap-btn:active:not(:disabled) { transform:scale(0.96); }
+.ap-btn:disabled { opacity:.4; cursor:not-allowed; }
 
-.ap-btn-primary  { background:var(--brand); color:#fff; }
-.ap-btn-primary:hover:not(:disabled)  { background:#2f2fb8; box-shadow:0 4px 20px rgba(69,69,245,.35); }
-.ap-btn-secondary { background:rgba(0,0,0,0.06); color:#1d1d1f; }
-.ap-btn-secondary:hover:not(:disabled) { background:rgba(0,0,0,0.10); }
-.ap-btn-danger  { background:rgba(255,59,48,.10);  color:#ff3b30; }
-.ap-btn-danger:hover:not(:disabled)  { background:rgba(255,59,48,.18); }
-.ap-btn-success { background:rgba(40,205,65,.10);  color:#28cd41; }
-.ap-btn-success:hover:not(:disabled) { background:rgba(40,205,65,.18); }
-.ap-btn-sm  { padding:6px 14px; font-size:13px; }
-.ap-btn-ghost { background:transparent; color:var(--brand); font-size:13px; font-weight:600;
-                font-family:var(--sf); cursor:pointer; border:none; padding:4px 0; }
-.ap-btn-ghost:hover { opacity:.7; }
+.ap-btn-primary  { background:var(--brand); color:#fff; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+.ap-btn-primary:hover:not(:disabled)  { background:var(--brand-hover); box-shadow:0 6px 20px rgba(0,0,0,0.2); transform:translateY(-1px); }
+.ap-btn-secondary { background:rgba(0,0,0,0.04); color:#111; border: 1px solid rgba(0,0,0,0.03); }
+.ap-btn-secondary:hover:not(:disabled) { background:rgba(0,0,0,0.08); }
+.ap-btn-danger  { background:rgba(239,68,68,.08); color:#ef4444; }
+.ap-btn-danger:hover:not(:disabled)  { background:rgba(239,68,68,.15); }
+.ap-btn-success { background:rgba(34,197,94,.08); color:#22c55e; }
+.ap-btn-success:hover:not(:disabled) { background:rgba(34,197,94,.15); }
+.ap-btn-sm  { padding:8px 16px; font-size:14px; border-radius:10px; }
+.ap-btn-ghost { background:transparent; color:var(--brand); font-size:14px; font-weight:600; cursor:pointer; border:none; padding:4px 8px; transition:0.2s; border-radius:8px;}
+.ap-btn-ghost:hover { background:rgba(0,0,0,0.04); }
 
-/* ── Cards ── */
+/* ── Cards (Premium Glass) ── */
 .ap-card {
-  background:rgba(255,255,255,0.92);
-  backdrop-filter:blur(20px) saturate(1.6);
-  -webkit-backdrop-filter:blur(20px) saturate(1.6);
-  border:1px solid rgba(0,0,0,0.07); border-radius:var(--rc);
-  box-shadow:0 2px 12px rgba(0,0,0,0.06);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--glass-border); 
+  border-radius: var(--rc);
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.ap-card:hover { box-shadow: 0 14px 44px rgba(0, 0, 0, 0.06); transform:translateY(-1px); }
 
 /* ── Sidebar frosted glass ── */
 .sidebar {
-  background:rgba(255,255,255,0.82);
-  backdrop-filter:blur(32px) saturate(1.8);
-  -webkit-backdrop-filter:blur(32px) saturate(1.8);
-  border-right:1px solid rgba(0,0,0,0.07);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 1px 0 20px rgba(0,0,0,0.02);
 }
 
 /* ── Nav ── */
 .nav-item {
-  display:flex; align-items:center; gap:9px; padding:8px 12px;
-  border-radius:10px; cursor:pointer; font-size:14px; font-weight:500;
-  color:#6e6e73; transition:all .15s; user-select:none;
+  display:flex; align-items:center; gap:12px; padding:10px 14px;
+  border-radius:12px; cursor:pointer; font-size:15px; font-weight:500;
+  color:#71717a; transition:all .2s ease; user-select:none; margin-bottom:2px;
 }
-.nav-item:hover  { background:rgba(0,0,0,0.05); color:#1d1d1f; }
-.nav-item.active { background:rgba(69,69,245,.10); color:#4545F5; font-weight:600; }
-.nav-group { font-size:10px; font-weight:700; color:#c7c7cc; text-transform:uppercase;
-             letter-spacing:0.9px; padding:14px 12px 4px; }
+.nav-item:hover  { background:rgba(0,0,0,0.03); color:#111; }
+.nav-item.active { background:var(--brand); color:#fff; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+.nav-group { font-size:11px; font-weight:700; color:#a1a1aa; text-transform:uppercase;
+             letter-spacing:1px; padding:18px 14px 6px; }
 
 /* ── Table ── */
 .ap-th { padding:10px 16px; font-size:11px; font-weight:700; color:#aeaeb2;
@@ -281,14 +296,14 @@ const DB = {
 };
 
 const LOGINS = [
-  { email:"owner@miner.com",              senha:"miner123", tipo:"owner", nome:"Joao Dono",   role:"owner",      marcaId:null },
-  { email:"admin@minerfashion.com.br",    senha:"admin123", tipo:"marca", nome:"Joao Souza",  role:"admin",      marcaId:"m1" },
-  { email:"fernanda@minerfashion.com.br", senha:"super123", tipo:"marca", nome:"Fernanda G.", role:"supervisor", marcaId:"m1" },
-  { email:"maria@minerfashion.com.br",    senha:"vend123",  tipo:"marca", nome:"Maria Sales", role:"vendedor",   marcaId:"m1" },
-  { email:"admin@lesalis.com.br",          senha:"lesalis2026", tipo:"marca", nome:"Le Salis Admin", role:"admin", marcaId:"m2" },
-  { email:"deborah@lesalis.com.br",         senha:"lesalis2026", tipo:"marca", nome:"Deborah",       role:"admin",      marcaId:"m2" },
-  { email:"leonardo@prls.com.br",         senha:"prls2026", tipo:"marca", nome:"Leonardo",    role:"admin",      marcaId:"m2" },
-  { email:"squad@minerbz.com.br",         senha:"squad2026",tipo:"marca", nome:"Squad Miner", role:"admin",      marcaId:"m1" },
+  { email:"gustavo@minerbz.com.br",       senha:"master2026", tipo:"owner", nome:"Gustavo",     role:"owner",      marcaId:null },
+  { email:"squad@minerbz.com.br",         senha:"squad2026",  tipo:"owner", nome:"Squad Miner", role:"owner",      marcaId:null },
+  { email:"admin@minerfashion.com.br",    senha:"admin123",   tipo:"marca", nome:"Joao Souza",  role:"admin",      marcaId:"m1" },
+  { email:"fernanda@minerfashion.com.br", senha:"super123",   tipo:"marca", nome:"Fernanda G.", role:"supervisor", marcaId:"m1" },
+  { email:"maria@minerfashion.com.br",    senha:"vend123",    tipo:"marca", nome:"Maria Sales", role:"vendedor",   marcaId:"m1" },
+  { email:"admin@lesalis.com.br",         senha:"lesalis2026",tipo:"marca", nome:"Le Salis Admin", role:"admin",   marcaId:"m2" },
+  { email:"deborah@lesalis.com.br",       senha:"lesalis2026",tipo:"marca", nome:"Deborah",       role:"admin",      marcaId:"m2" },
+  { email:"leonardo@prls.com.br",         senha:"prls2026",   tipo:"marca", nome:"Leonardo",    role:"admin",      marcaId:"m2" },
 ];
 
 const STATUS_CFG = {
@@ -469,12 +484,15 @@ function Login({ onLogin }) {
 
     if (data?.user) {
       // Usuário real do Supabase
+      const userEmail = data.user.email;
+      const isAdminEmail = (userEmail === 'gustavo@minerbz.com.br' || userEmail === 'squad@minerbz.com.br');
+      
       onLogin({
-        email: data.user.email,
-        nome: data.user.user_metadata?.nome || data.user.email.split("@")[0],
-        tipo: "marca",
-        role: data.user.user_metadata?.role || "admin",
-        marcaId: data.user.user_metadata?.marcaId || "m1",
+        email: userEmail,
+        nome: data.user.user_metadata?.nome || userEmail.split("@")[0],
+        tipo: isAdminEmail ? "owner" : "marca",
+        role: isAdminEmail ? "owner" : (data.user.user_metadata?.role || "admin"),
+        marcaId: isAdminEmail ? null : (data.user.user_metadata?.marcaId || "m1"),
         supabaseUser: true,
       });
       return;
@@ -800,8 +818,28 @@ function OwnerMarcas({ marcas, setMarcas }) {
           <button className="ap-btn ap-btn-primary" disabled={!f.nome||!f.email||!f.resp}
             onClick={() => {
               if (f.nome && f.email && f.resp) {
+                const generatedPassword = Math.random().toString(36).slice(-8); // Gera senha aleatória de 8 chars
+
+                // Webhook Make.com -> Notion Sync
+                try {
+                  fetch("https://hook.us1.make.com/xxxx_notion_sync", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                      event: "new_brand_created", 
+                      url: "https://minerbz.com.br", 
+                      email: f.email, 
+                      password: generatedPassword, 
+                      marca: f.nome 
+                    })
+                  }).catch(() => {});
+                } catch(e) {}
+
+                // Criar no Auth do Supabase implicitamente (se configurado backend completo)
+                // supabase.auth.signUp({ email: f.email, password: generatedPassword, options: { ... } });
+
                 onSave({ ...f, id:`m${Date.now()}`, lojas:1, usuarios:1, clientes:0,
-                  mrr: DB.planos.find(p=>p.id===f.plano)?.preco||0, status:"trial", createdAt:"Agora" });
+                  mrr: DB.planos.find(p=>p.id===f.plano)?.preco||0, status:"trial", createdAt:"Agora", defaultPassword: generatedPassword });
                 onClose();
               }
             }}>

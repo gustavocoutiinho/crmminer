@@ -7,7 +7,7 @@ import VendedorDashboard from "./VendedorDashboard";
 import AgendaDono from "./AgendaDono";
 
 function MarcaDashboard({ user, setPage }) {
-  if (user.role === "vendedor") return <VendedorDashboard user={user} />;
+  if (user.role === "vendedor") return <VendedorDashboard user={user} setPage={setPage} />;
 
   const rd = ROLE_CFG[user.role] || ROLE_CFG.vendedor;
   const [stats, setStats] = useState(null);

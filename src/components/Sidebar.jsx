@@ -20,6 +20,7 @@ function Sidebar({ page, setPage, user, onLogout, isOwner = false, className = "
     { key: "dashboard", icon: "⬡", label: "Dashboard", roles: ["miner", "dono", "gerente", "vendedor"] },
     { group: "Gestão", items: [
       { key: "equipe", icon: "👥", label: "Equipe", roles: ["miner", "dono", "gerente"] },
+      { key: "metas", icon: "🎯", label: "Metas", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "ranking", icon: "🏆", label: "Ranking", roles: ["miner", "dono", "gerente", "vendedor"] },
     ]},
     { group: "Operação", items: [
@@ -36,6 +37,10 @@ function Sidebar({ page, setPage, user, onLogout, isOwner = false, className = "
       { key: "integracoes", icon: "🔌", label: "Integrações API", roles: ["miner", "dono"] },
       { key: "exportar", icon: "📤", label: "Dados & Export", roles: ["miner", "dono", "gerente"] },
       { key: "atividades", icon: "📜", label: "Atividades", roles: ["miner", "dono"] },
+    ]},
+    { group: "QR Code", items: [
+      { key: "meuqr", icon: "📱", label: "Meu QR", roles: ["vendedor"] },
+      { key: "qrcodes", icon: "📱", label: "QR Codes", roles: ["miner", "dono"] },
     ]},
     { group: "Config", items: [
       { key: "usuarios", icon: "🔐", label: "Usuários", roles: ["miner", "dono"] },

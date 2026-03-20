@@ -24,6 +24,9 @@ import MarcaUsuarios from "./MarcaUsuarios";
 import MarcaConfig from "./MarcaConfig";
 import MarcaNotificacoes from "./MarcaNotificacoes";
 import MeuPerfil from "./MeuPerfil";
+import MetasVendedor from "./MetasVendedor";
+import MeuQRCode from "./MeuQRCode";
+import GestaoQRCodes from "./GestaoQRCodes";
 
 const STYLES_IMPORT = null; // CSS is now in global.css
 
@@ -82,6 +85,9 @@ function PortalMarca({ user, onLogout, dark, onToggleDark }) {
           {page === "usuarios" && isAdmin && <MarcaUsuarios user={user} />}
           {page === "config" && isAdmin && <MarcaConfig user={user} />}
           {page === "notificacoes" && <MarcaNotificacoes user={user} />}
+          {page === "metas" && <MetasVendedor user={user} />}
+          {page === "meuqr" && user.role === "vendedor" && <MeuQRCode user={user} />}
+          {page === "qrcodes" && isAdmin && <GestaoQRCodes user={user} />}
         </div>
       </div>
     </div>

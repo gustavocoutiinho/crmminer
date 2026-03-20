@@ -10,6 +10,7 @@ import TagsManager from "./TagsManager";
 function MarcaConfig({ user }) {
   const toast = useToast();
   const [tab, setTab] = useState("dados");
+  const [intervaloContato, setIntervaloContato] = useState(48);
   const marcaId = user?.marca_id || user?.marcaId;
   const { data: marcasData, loading: loadingMarca } = useSupabaseQuery("marcas");
   const marca = marcasData?.find((m) => String(m.id) === String(marcaId)) || marcasData?.[0] || null;
@@ -59,7 +60,7 @@ function MarcaConfig({ user }) {
     <div className="fade-up">
       <SectionHeader tag="Configurações" title="Configurações da Marca" />
       <div className="seg" style={{ marginBottom: 24 }}>
-        {[{ k: "dados", l: "Dados" }, { k: "tags", l: "Tags" }, { k: "integracoes", l: "Integrações" }, { k: "notificacoes", l: "Notificações" }].map((t) => (
+        {[{ k: "dados", l: "Dados" }, { k: "tags", l: "Tags" }, { k: "contato", l: "Regras de Contato" }, { k: "integracoes", l: "Integrações" }, { k: "notificacoes", l: "Notificações" }].map((t) => (
           <button key={t.k} className={`seg-btn ${tab === t.k ? "on" : ""}`} onClick={() => setTab(t.k)}>{t.l}</button>
         ))}
       </div>
@@ -102,6 +103,48 @@ function MarcaConfig({ user }) {
       )}
 
       {tab === "tags" && <TagsManager marcaId={marcaId} />}
+
+      {tab === "contato" && (
+        <div className="ap-card" style={{ padding: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>⏰ Regras de Contato (Anti-Spam)</div>
+          <p style={{ fontSize: 13, color: T.muted, marginBottom: 16 }}>
+            Configure o intervalo mínimo entre contatos com o mesmo cliente. Isso protege o cliente de ser contactado com muita frequência.
+          </p>
+          <div style={{ maxWidth: 400 }}>
+            <Lbl>Intervalo mínimo entre contatos (horas)</Lbl>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+              <input
+                className="ap-inp"
+                type="number"
+                min={1}
+                max={720}
+                value={intervaloContato}
+                onChange={e => setIntervaloContato(Number(e.target.value))}
+                style={{ width: 100, textAlign: "center" }}
+              />
+              <span style={{ fontSize: 13, color: T.sub }}>horas ({Math.round(intervaloContato / 24)} dias)</span>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              {[24, 48, 72, 168].map(h => (
+                <button
+                  key={h}
+                  className={`ap-btn ${intervaloContato === h ? "ap-btn-primary" : "ap-btn-secondary"} ap-btn-sm`}
+                  onClick={() => setIntervaloContato(h)}
+                >
+                  {h}h ({Math.round(h / 24)}d)
+                </button>
+              ))}
+            </div>
+            <button
+              className="ap-btn ap-btn-primary"
+              style={{ marginTop: 20 }}
+              onClick={() => toast("Regras de contato salvas!", "success")}
+            >
+              Salvar Regras
+            </button>
+          </div>
+        </div>
+      )}
 
       {tab === "integracoes" && (
         <div className="ap-card" style={{ padding: 24 }}>

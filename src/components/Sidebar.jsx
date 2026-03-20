@@ -27,6 +27,7 @@ function Sidebar({ page, setPage, user, onLogout, isOwner = false, className = "
     { group: "Vendas", items: [
       { key: "inbox", icon: "💬", label: "Inbox", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "clientes", icon: "🙍", label: "Clientes", roles: ["miner", "dono", "gerente", "vendedor"] },
+      { key: "segmentos", icon: "🎯", label: "Segmentos", roles: ["miner", "dono", "gerente"] },
       { key: "agenda", icon: "📋", label: "Agenda", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "agenda_contatos", icon: "📅", label: "Agenda Contatos", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "sugestoes", icon: "💡", label: "Sugestões", roles: ["miner", "dono", "gerente", "vendedor"] },

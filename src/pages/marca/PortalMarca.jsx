@@ -11,6 +11,7 @@ import MarcaEquipe from "./MarcaEquipe";
 import MarcaRanking from "./MarcaRanking";
 import MarcaInbox from "./MarcaInbox";
 import MarcaClientes from "./MarcaClientes";
+import SegmentacaoAvancada from "./SegmentacaoAvancada";
 import MarcaAgenda from "./MarcaAgenda";
 import MarcaCampanhas from "./MarcaCampanhas";
 import MarcaAutomacoes from "./MarcaAutomacoes";
@@ -80,6 +81,7 @@ function PortalMarca({ user, onLogout, dark, onToggleDark }) {
           {page === "ranking" && <MarcaRanking user={user} />}
           {page === "inbox" && <MarcaInbox user={user} />}
           {page === "clientes" && <MarcaClientes user={user} />}
+          {page === "segmentos" && (isAdmin || isSup) && <SegmentacaoAvancada user={user} setPage={setPage} />}
           {page === "agenda" && <MarcaAgenda user={user} />}
           {page === "campanhas" && isAdmin && <MarcaCampanhas user={user} />}
           {page === "automacoes" && isAdmin && <MarcaAutomacoes user={user} />}

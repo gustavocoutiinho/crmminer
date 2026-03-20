@@ -365,7 +365,7 @@ function MarcaClientes({ user }) {
         </>
       )}
 
-      {selectedCliente && <ClienteDetailModal clienteId={selectedCliente} onClose={() => setSelectedCliente(null)} />}
+      {selectedCliente && <ClienteDetailModal clienteId={selectedCliente} user={user} onClose={() => setSelectedCliente(null)} />}
       {contatoCliente && (
         <ContatoModal
           cliente={contatoCliente}

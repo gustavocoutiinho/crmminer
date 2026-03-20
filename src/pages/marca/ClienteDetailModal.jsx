@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, Chip, Modal } from "../../components/UI";
-import { fetchClienteDetail, updateRecord, fetchTags, addClienteTag, removeClienteTag, addTimelineEntry } from "../../lib/api";
+import { fetchClienteDetail, updateRecord, fetchTags, addClienteTag, removeClienteTag, addTimelineEntry, createRecord } from "../../lib/api";
 import { RFM_CFG } from "../../lib/theme";
 import { timelineRelative, timelineDateGroup } from "../../utils/helpers";
 import FidelidadeCliente from "./FidelidadeCliente";
@@ -184,7 +184,7 @@ function TimelineTab({ timeline, clienteId, onNewEntry }) {
   );
 }
 
-function ClienteDetailModal({ clienteId, onClose }) {
+function ClienteDetailModal({ clienteId, user, onClose }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("resumo");
@@ -196,6 +196,10 @@ function ClienteDetailModal({ clienteId, onClose }) {
     (DB_FALLBACK.registros_interacao || []).filter(r => r.cliente_id === clienteId)
   );
 
+  const [showAgendaForm, setShowAgendaForm] = useState(false);
+  const [agendaData, setAgendaData] = useState("");
+  const [savingAgenda, setSavingAgenda] = useState(false);
+
   useEffect(() => {
     setLoading(true);
     fetchClienteDetail(clienteId)
@@ -206,6 +210,30 @@ function ClienteDetailModal({ clienteId, onClose }) {
   const c = detail?.cliente;
   const pedidos = detail?.pedidos || [];
   const timeline = detail?.timeline || [];
+
+  const salvarAgendamento = async () => {
+    if (!agendaData) return;
+    setSavingAgenda(true);
+    try {
+      await createRecord("tarefas", {
+        titulo: `Follow-up: ${c?.nome}`,
+        descricao: "Contato agendado via perfil do cliente",
+        tipo: "follow-up",
+        prioridade: "media",
+        data_limite: agendaData,
+        cliente_id: clienteId,
+        responsavel_id: user?.id || null,
+        marca_id: user?.marca_id || user?.marcaId || "prls",
+        concluida: false,
+        status: "pendente"
+      });
+      setShowAgendaForm(false);
+      setAgendaData("");
+      const res = await addTimelineEntry(clienteId, { tipo: "tarefa", titulo: "Contato agendado", descricao: `Para ${new Date(agendaData).toLocaleString("pt-BR")}` });
+      if (res?.data) setDetail(prev => ({ ...prev, timeline: [res.data, ...prev.timeline] }));
+    } catch (e) { console.error("Erro ao agendar:", e); }
+    setSavingAgenda(false);
+  };
 
   const saveNotas = async () => {
     setSavingNotas(true);
@@ -233,22 +261,47 @@ function ClienteDetailModal({ clienteId, onClose }) {
           {/* ── Tab: Resumo ── */}
           {tab === "resumo" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
                 {[
                   ["Segmento RFM", RFM_CFG[c.segmento_rfm]?.label || c.segmento_rfm || "—"],
                   ["Recência", c.recencia_dias != null ? `${c.recencia_dias} dias` : "—"],
-                  ["Total Pedidos", c.total_pedidos ?? "—"],
+                  ["Tot. Pedidos", c.total_pedidos ?? "—"],
                   ["Receita Total", `R$ ${(+(c.receita_total || 0)).toLocaleString("pt-BR")}`],
                   ["Telefone", c.telefone || "—"],
                   ["Email", c.email || "—"],
                   ["Cadastro", c.created_at ? new Date(c.created_at).toLocaleDateString("pt-BR") : "—"],
+                  ["Cashback", `R$ ${(+(c.cashback_saldo || 0)).toLocaleString("pt-BR", {minimumFractionDigits: 2})}`],
                 ].map(([k, v], i) => (
                   <div key={i} style={{ background: "rgba(0,0,0,0.03)", borderRadius: 10, padding: "10px 14px" }}>
-                    <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>{k}</div>
+                    <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k}</div>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{v}</div>
                   </div>
                 ))}
               </div>
+
+              {/* Ações Rápidas */}
+              <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 8 }}>
+                <a 
+                  href={`https://wa.me/${(c.telefone||"").replace(/\D/g,"")}?text=${encodeURIComponent(`Olá ${c.nome?.split(" ")[0]}! Tudo bem? Aqui é da loja. Use o código ${user?.codigo_vendedor || "PROMO10"} para garantir 10% OFF na sua próxima compra pelo nosso site!`)}`} 
+                  target="_blank" rel="noopener noreferrer" 
+                  className="ap-btn ap-btn-primary ap-btn-sm" 
+                  style={{ flex: 1, textAlign: "center", textDecoration: "none", background: "#25D366", borderColor: "#25D366", color: "#fff" }}>
+                  Enviar Cupom (WhatsApp)
+                </a>
+                <button className="ap-btn ap-btn-secondary ap-btn-sm" style={{ flex: 1 }} onClick={() => setShowAgendaForm(!showAgendaForm)}>
+                  Agendar Follow-up
+                </button>
+              </div>
+
+              {showAgendaForm && (
+                <div style={{ background: "rgba(0,0,0,0.03)", borderRadius: 10, padding: 14, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>🗓 Data Prevista:</div>
+                  <input type="datetime-local" className="ap-inp" style={{ flex: 1, fontSize: 13, padding: "6px 10px" }} value={agendaData} onChange={e => setAgendaData(e.target.value)} />
+                  <button className="ap-btn ap-btn-primary ap-btn-sm" onClick={salvarAgendamento} disabled={!agendaData || savingAgenda}>
+                    {savingAgenda ? "Agendando..." : "Confirmar"}
+                  </button>
+                </div>
+              )}
 
               {/* Tags interativas */}
               <ClienteTagsEditor clienteId={clienteId} currentTags={c.tags || []} onUpdate={(newTags) => setDetail(prev => ({ ...prev, cliente: { ...prev.cliente, tags: newTags } }))} />

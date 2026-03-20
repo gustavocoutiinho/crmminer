@@ -78,6 +78,77 @@ function MarcaDashboard({ user, setPage }) {
         </div>
       </div>
 
+      {/* Phase 5 - Equipe Status Widget */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("gestao_vendedores")}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>👥 Status da Equipe</div>
+          {(() => {
+            const vendedores = DB_FALLBACK.usuarios.filter(u => u.marca_id === (user?.marca_id || user?.marcaId || "prls") && u.role === "vendedor");
+            const ativos = vendedores.filter(v => v.status_trabalho === "ativo").length;
+            const ausentes = vendedores.filter(v => v.status_trabalho !== "ativo" && v.status_trabalho !== "desligado").length;
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: T.muted }}>Ativos</span>
+                  <span style={{ fontWeight: 700, color: "#28cd41" }}>{ativos}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: T.muted }}>Ausentes</span>
+                  <span style={{ fontWeight: 700, color: "#ff9500" }}>{ausentes}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: T.muted }}>Total</span>
+                  <span style={{ fontWeight: 600 }}>{vendedores.length}</span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Agenda Today Widget for Dono */}
+        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("agenda_contatos")}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📅 Contatos Agendados Hoje</div>
+          {(() => {
+            const today = new Date().toISOString().slice(0, 10);
+            const agendados = (DB_FALLBACK.contatos_agendados || []).filter(a => a.data === today && a.status === "pendente");
+            const atrasados = (DB_FALLBACK.contatos_agendados || []).filter(a => a.status === "atrasado" || (a.status === "pendente" && a.data < today));
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: T.muted }}>Pendentes hoje</span>
+                  <span style={{ fontWeight: 700, color: "#4545F5" }}>{agendados.length}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: T.muted }}>Atrasados</span>
+                  <span style={{ fontWeight: 700, color: "#ff3b30" }}>{atrasados.length}</span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Sugestões for Dono */}
+        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("sugestoes")}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>💡 Sugestões Proativas</div>
+          {(() => {
+            const emRisco = DB_FALLBACK.clientes.filter(c => c.segmento_rfm === "at_risk" || c.segmento_rfm === "hibernating").length;
+            const semContato = DB_FALLBACK.clientes.filter(c => c.recencia_dias > 30).length;
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: T.muted }}>Clientes em risco</span>
+                  <span style={{ fontWeight: 700, color: "#ff3b30" }}>{emRisco}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: T.muted }}>Sem contato 30d+</span>
+                  <span style={{ fontWeight: 700, color: "#ff9500" }}>{semContato}</span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
       {/* Phase 4 Widgets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
         {/* Inbox Widget */}

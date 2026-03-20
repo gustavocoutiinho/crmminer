@@ -20,13 +20,16 @@ function Sidebar({ page, setPage, user, onLogout, isOwner = false, className = "
     { key: "dashboard", icon: "⬡", label: "Dashboard", roles: ["miner", "dono", "gerente", "vendedor"] },
     { group: "Gestão", items: [
       { key: "equipe", icon: "👥", label: "Equipe", roles: ["miner", "dono", "gerente"] },
+      { key: "gestao_vendedores", icon: "🧑‍💼", label: "Gestão Vendedores", roles: ["miner", "dono", "gerente"] },
       { key: "metas", icon: "🎯", label: "Metas", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "ranking", icon: "🏆", label: "Ranking", roles: ["miner", "dono", "gerente", "vendedor"] },
     ]},
-    { group: "Operação", items: [
+    { group: "Vendas", items: [
       { key: "inbox", icon: "💬", label: "Inbox", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "clientes", icon: "🙍", label: "Clientes", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "agenda", icon: "📋", label: "Agenda", roles: ["miner", "dono", "gerente", "vendedor"] },
+      { key: "agenda_contatos", icon: "📅", label: "Agenda Contatos", roles: ["miner", "dono", "gerente", "vendedor"] },
+      { key: "sugestoes", icon: "💡", label: "Sugestões", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "pipeline", icon: "🔀", label: "Pipeline", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "campanhas", icon: "📢", label: "Campanhas", roles: ["miner", "dono"] },
       { key: "automacoes", icon: "⚡", label: "Automações", roles: ["miner", "dono"] },
@@ -49,6 +52,7 @@ function Sidebar({ page, setPage, user, onLogout, isOwner = false, className = "
     ]},
     { group: "Config", items: [
       { key: "usuarios", icon: "🔐", label: "Usuários", roles: ["miner", "dono"] },
+      { key: "permissoes", icon: "🛡", label: "Permissões", roles: ["miner", "dono"] },
       { key: "config", icon: "⚙", label: "Configurações", roles: ["miner", "dono"] },
     ]},
   ];

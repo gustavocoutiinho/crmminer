@@ -111,6 +111,60 @@ function RankingWidget({ user }) {
   );
 }
 
+function AgendaHojeWidget({ user, setPage }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const agendados = (DB_FALLBACK.contatos_agendados || []).filter(
+    a => a.marca_id === (user?.marca_id || user?.marcaId || "prls") && a.data === today && a.status === "pendente"
+  ).slice(0, 3);
+  const TIPO_ICON = { whatsapp: "💬", ligacao: "📞", email: "📧" };
+
+  return (
+    <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("agenda_contatos")}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📅 Contatos Agendados Hoje</div>
+      {agendados.length === 0 ? (
+        <div style={{ fontSize: 13, color: "var(--muted)" }}>Nenhum contato agendado para hoje</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {agendados.map(a => {
+            const cli = DB_FALLBACK.clientes.find(c => c.id === a.cliente_id);
+            return (
+              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <span>{TIPO_ICON[a.tipo] || "📋"}</span>
+                <span style={{ fontWeight: 600 }}>{cli?.nome || "Cliente"}</span>
+                <span style={{ color: "var(--muted)" }}>às {a.hora}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SugestoesWidget({ user, setPage }) {
+  const clientes = DB_FALLBACK.clientes.filter(c => c.marca_id === (user?.marca_id || user?.marcaId || "prls") && c.vendedor_id === user.id);
+  const urgentes = clientes.filter(c => c.segmento_rfm === "at_risk" || c.segmento_rfm === "hibernating" || c.recencia_dias > 30).slice(0, 3);
+
+  return (
+    <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("sugestoes")}>
+      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>💡 Sugestões Urgentes</div>
+      {urgentes.length === 0 ? (
+        <div style={{ fontSize: 13, color: "var(--muted)" }}>Sem sugestões urgentes</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {urgentes.map(cli => (
+            <div key={cli.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+              <span>{cli.segmento_rfm === "at_risk" || cli.segmento_rfm === "em_risco" ? "⚠️" : cli.recencia_dias > 60 ? "💤" : "🕐"}</span>
+              <span style={{ fontWeight: 600 }}>{cli.nome}</span>
+              <span style={{ color: "var(--muted)", fontSize: 11 }}>{cli.recencia_dias}d sem contato</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VendedorDashboard({ user, setPage }) {
   const rd = ROLE_CFG[user.role] || ROLE_CFG.vendedor;
   const [stats, setStats] = useState(null);
@@ -148,6 +202,11 @@ function VendedorDashboard({ user, setPage }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
         <CarteiraWidget user={user} />
         <RankingWidget user={user} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
+        <AgendaHojeWidget user={user} setPage={setPage} />
+        <SugestoesWidget user={user} setPage={setPage} />
       </div>
 
       <div className="kpi-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>

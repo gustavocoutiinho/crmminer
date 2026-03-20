@@ -137,6 +137,8 @@ export const DB_FALLBACK = {
       codigo_vendedor: "", meta_contatos_diarios: 0,
       vendas: 0, meta: 0, fat: 0,
       qr_stats: { escaneados: 0, vendas: 0, receita: 0 },
+      status_trabalho: "ativo", ausencia_inicio: null, ausencia_fim: null,
+      performance_30d: [],
     },
     {
       id: "u2", nome: "Ana Souza", email: "ana@prls.com.br",
@@ -145,6 +147,8 @@ export const DB_FALLBACK = {
       codigo_vendedor: "PRLS-ANA-001", meta_contatos_diarios: 20,
       vendas: 38, meta: 50000, fat: 32400,
       qr_stats: { escaneados: 47, vendas: 12, receita: 8400 },
+      status_trabalho: "ativo", ausencia_inicio: null, ausencia_fim: null,
+      performance_30d: [12,15,18,14,20,16,19,13,17,20,15,18,14,16,20,19,17,15,18,14,16,20,13,17,19,15,18,14,16,20],
     },
     {
       id: "u3", nome: "Carlos Mendes", email: "carlos@prls.com.br",
@@ -153,6 +157,8 @@ export const DB_FALLBACK = {
       codigo_vendedor: "", meta_contatos_diarios: 0,
       vendas: 0, meta: 0, fat: 0,
       qr_stats: { escaneados: 0, vendas: 0, receita: 0 },
+      status_trabalho: "ativo", ausencia_inicio: null, ausencia_fim: null,
+      performance_30d: [],
     },
     {
       id: "u4", nome: "Beatriz Lima", email: "bia@prls.com.br",
@@ -161,6 +167,8 @@ export const DB_FALLBACK = {
       codigo_vendedor: "PRLS-BIA-002", meta_contatos_diarios: 20,
       vendas: 45, meta: 50000, fat: 41200,
       qr_stats: { escaneados: 63, vendas: 18, receita: 12600 },
+      status_trabalho: "ativo", ausencia_inicio: null, ausencia_fim: null,
+      performance_30d: [18,20,17,19,20,16,18,20,15,19,20,17,18,20,16,19,20,18,17,20,19,16,20,18,17,19,20,18,16,20],
     },
     {
       id: "u5", nome: "Rafael Oliveira", email: "rafael@prls.com.br",
@@ -169,22 +177,24 @@ export const DB_FALLBACK = {
       codigo_vendedor: "PRLS-RAF-003", meta_contatos_diarios: 15,
       vendas: 22, meta: 40000, fat: 18900,
       qr_stats: { escaneados: 29, vendas: 7, receita: 4900 },
+      status_trabalho: "ferias", ausencia_inicio: "2026-03-18", ausencia_fim: "2026-03-25",
+      performance_30d: [8,10,12,9,11,7,10,8,12,9,11,8,10,7,12,9,8,11,10,7,9,12,8,10,11,7,9,8,0,0],
     },
   ],
 
   clientes: [
-    { id: "c1", nome: "Maria Silva", email: "maria@email.com", telefone: "(85) 99999-1111", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "champion", recencia_dias: 5, total_pedidos: 12, receita_total: 4800, ultimo_contato: "2026-03-18T14:00:00Z", proximo_contato_permitido: "2026-03-20T14:00:00Z", created_at: "2025-01-15T00:00:00Z", pontos_fidelidade: 1850, nivel_fidelidade: "Prata" },
-    { id: "c2", nome: "João Santos", email: "joao@email.com", telefone: "(85) 99999-2222", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "loyal", recencia_dias: 12, total_pedidos: 8, receita_total: 3200, ultimo_contato: "2026-03-10T10:00:00Z", proximo_contato_permitido: "2026-03-12T10:00:00Z", created_at: "2025-02-20T00:00:00Z", pontos_fidelidade: 340, nivel_fidelidade: "Bronze" },
-    { id: "c3", nome: "Fernanda Costa", email: "fernanda@email.com", telefone: "(85) 99999-3333", marca_id: "prls", loja_id: "loja1", vendedor_id: "u5", segmento_rfm: "potential", recencia_dias: 25, total_pedidos: 3, receita_total: 890, ultimo_contato: "2026-02-20T09:00:00Z", proximo_contato_permitido: "2026-02-22T09:00:00Z", created_at: "2025-06-10T00:00:00Z", pontos_fidelidade: 120, nivel_fidelidade: "Bronze" },
-    { id: "c4", nome: "Pedro Almeida", email: "pedro@email.com", telefone: "(85) 99999-4444", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "champion", recencia_dias: 3, total_pedidos: 15, receita_total: 7200, ultimo_contato: "2026-03-19T16:00:00Z", proximo_contato_permitido: "2026-03-21T16:00:00Z", created_at: "2025-01-05T00:00:00Z", pontos_fidelidade: 4200, nivel_fidelidade: "Ouro" },
-    { id: "c5", nome: "Lucia Rodrigues", email: "lucia@email.com", telefone: "(85) 99999-5555", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "at_risk", recencia_dias: 68, total_pedidos: 4, receita_total: 1600, ultimo_contato: "2026-01-12T11:00:00Z", proximo_contato_permitido: "2026-01-14T11:00:00Z", created_at: "2025-03-18T00:00:00Z", pontos_fidelidade: 680, nivel_fidelidade: "Prata" },
-    { id: "c6", nome: "Marcos Oliveira", email: "marcos@email.com", telefone: "(85) 99999-6666", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "new", recencia_dias: 2, total_pedidos: 1, receita_total: 350, ultimo_contato: "2026-03-19T08:00:00Z", proximo_contato_permitido: "2026-03-21T08:00:00Z", created_at: "2026-03-16T00:00:00Z", pontos_fidelidade: 50, nivel_fidelidade: "Bronze" },
-    { id: "c7", nome: "Camila Ferreira", email: "camila@email.com", telefone: "(85) 99999-7777", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "loyal", recencia_dias: 15, total_pedidos: 6, receita_total: 2100, ultimo_contato: "2026-03-05T14:00:00Z", proximo_contato_permitido: "2026-03-07T14:00:00Z", created_at: "2025-04-22T00:00:00Z", pontos_fidelidade: 1100, nivel_fidelidade: "Prata" },
-    { id: "c8", nome: "Ricardo Barbosa", email: "ricardo@email.com", telefone: "(85) 99999-8888", marca_id: "prls", loja_id: "loja1", vendedor_id: "u5", segmento_rfm: "hibernating", recencia_dias: 95, total_pedidos: 2, receita_total: 580, ultimo_contato: "2025-12-15T10:00:00Z", proximo_contato_permitido: "2025-12-17T10:00:00Z", created_at: "2025-05-30T00:00:00Z", pontos_fidelidade: 90, nivel_fidelidade: "Bronze" },
-    { id: "c9", nome: "Patrícia Nunes", email: "patricia@email.com", telefone: "(85) 99999-9999", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "potential", recencia_dias: 20, total_pedidos: 4, receita_total: 1450, ultimo_contato: "2026-02-28T16:00:00Z", proximo_contato_permitido: "2026-03-01T16:00:00Z", created_at: "2025-07-14T00:00:00Z", pontos_fidelidade: 560, nivel_fidelidade: "Prata" },
-    { id: "c10", nome: "Thiago Martins", email: "thiago@email.com", telefone: "(85) 98888-1010", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "new", recencia_dias: 1, total_pedidos: 1, receita_total: 290, ultimo_contato: "2026-03-19T20:00:00Z", proximo_contato_permitido: "2026-03-21T20:00:00Z", created_at: "2026-03-18T00:00:00Z", pontos_fidelidade: 30, nivel_fidelidade: "Bronze" },
-    { id: "c11", nome: "Isabela Souza", email: "isabela@email.com", telefone: "(85) 98888-1111", marca_id: "prls", loja_id: "loja1", vendedor_id: "u5", segmento_rfm: "at_risk", recencia_dias: 75, total_pedidos: 3, receita_total: 920, ultimo_contato: "2026-01-05T09:00:00Z", proximo_contato_permitido: "2026-01-07T09:00:00Z", created_at: "2025-04-10T00:00:00Z", pontos_fidelidade: 210, nivel_fidelidade: "Bronze" },
-    { id: "c12", nome: "Daniel Gomes", email: "daniel@email.com", telefone: "(85) 98888-1212", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "champion", recencia_dias: 7, total_pedidos: 10, receita_total: 5300, ultimo_contato: "2026-03-13T11:00:00Z", proximo_contato_permitido: "2026-03-15T11:00:00Z", created_at: "2025-02-01T00:00:00Z", pontos_fidelidade: 5800, nivel_fidelidade: "Diamante" },
+    { id: "c1", nome: "Maria Silva", email: "maria@email.com", telefone: "(85) 99999-1111", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "champion", recencia_dias: 5, total_pedidos: 12, receita_total: 4800, ultimo_contato: "2026-03-18T14:00:00Z", proximo_contato_permitido: "2026-03-20T14:00:00Z", created_at: "2025-01-15T00:00:00Z", pontos_fidelidade: 1850, nivel_fidelidade: "Prata", data_nascimento: "1990-03-25", ultimo_pedido_data: "2026-03-15" },
+    { id: "c2", nome: "João Santos", email: "joao@email.com", telefone: "(85) 99999-2222", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "loyal", recencia_dias: 12, total_pedidos: 8, receita_total: 3200, ultimo_contato: "2026-03-10T10:00:00Z", proximo_contato_permitido: "2026-03-12T10:00:00Z", created_at: "2025-02-20T00:00:00Z", pontos_fidelidade: 340, nivel_fidelidade: "Bronze", data_nascimento: "1988-07-14", ultimo_pedido_data: "2026-03-08" },
+    { id: "c3", nome: "Fernanda Costa", email: "fernanda@email.com", telefone: "(85) 99999-3333", marca_id: "prls", loja_id: "loja1", vendedor_id: "u5", segmento_rfm: "potential", recencia_dias: 25, total_pedidos: 3, receita_total: 890, ultimo_contato: "2026-02-20T09:00:00Z", proximo_contato_permitido: "2026-02-22T09:00:00Z", created_at: "2025-06-10T00:00:00Z", pontos_fidelidade: 120, nivel_fidelidade: "Bronze", data_nascimento: "1995-11-30", ultimo_pedido_data: "2026-02-18" },
+    { id: "c4", nome: "Pedro Almeida", email: "pedro@email.com", telefone: "(85) 99999-4444", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "champion", recencia_dias: 3, total_pedidos: 15, receita_total: 7200, ultimo_contato: "2026-03-19T16:00:00Z", proximo_contato_permitido: "2026-03-21T16:00:00Z", created_at: "2025-01-05T00:00:00Z", pontos_fidelidade: 4200, nivel_fidelidade: "Ouro", data_nascimento: "1985-09-10", ultimo_pedido_data: "2026-03-17" },
+    { id: "c5", nome: "Lucia Rodrigues", email: "lucia@email.com", telefone: "(85) 99999-5555", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "at_risk", recencia_dias: 68, total_pedidos: 4, receita_total: 1600, ultimo_contato: "2026-01-12T11:00:00Z", proximo_contato_permitido: "2026-01-14T11:00:00Z", created_at: "2025-03-18T00:00:00Z", pontos_fidelidade: 680, nivel_fidelidade: "Prata", data_nascimento: "1992-05-22", ultimo_pedido_data: "2026-01-10" },
+    { id: "c6", nome: "Marcos Oliveira", email: "marcos@email.com", telefone: "(85) 99999-6666", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "new", recencia_dias: 2, total_pedidos: 1, receita_total: 350, ultimo_contato: "2026-03-19T08:00:00Z", proximo_contato_permitido: "2026-03-21T08:00:00Z", created_at: "2026-03-16T00:00:00Z", pontos_fidelidade: 50, nivel_fidelidade: "Bronze", data_nascimento: "1998-12-03", ultimo_pedido_data: "2026-03-18" },
+    { id: "c7", nome: "Camila Ferreira", email: "camila@email.com", telefone: "(85) 99999-7777", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "loyal", recencia_dias: 15, total_pedidos: 6, receita_total: 2100, ultimo_contato: "2026-03-05T14:00:00Z", proximo_contato_permitido: "2026-03-07T14:00:00Z", created_at: "2025-04-22T00:00:00Z", pontos_fidelidade: 1100, nivel_fidelidade: "Prata", data_nascimento: "1993-03-22", ultimo_pedido_data: "2026-03-03" },
+    { id: "c8", nome: "Ricardo Barbosa", email: "ricardo@email.com", telefone: "(85) 99999-8888", marca_id: "prls", loja_id: "loja1", vendedor_id: "u5", segmento_rfm: "hibernating", recencia_dias: 95, total_pedidos: 2, receita_total: 580, ultimo_contato: "2025-12-15T10:00:00Z", proximo_contato_permitido: "2025-12-17T10:00:00Z", created_at: "2025-05-30T00:00:00Z", pontos_fidelidade: 90, nivel_fidelidade: "Bronze", data_nascimento: "1980-08-17", ultimo_pedido_data: "2025-12-10" },
+    { id: "c9", nome: "Patrícia Nunes", email: "patricia@email.com", telefone: "(85) 99999-9999", marca_id: "prls", loja_id: "loja1", vendedor_id: "u2", segmento_rfm: "potential", recencia_dias: 20, total_pedidos: 4, receita_total: 1450, ultimo_contato: "2026-02-28T16:00:00Z", proximo_contato_permitido: "2026-03-01T16:00:00Z", created_at: "2025-07-14T00:00:00Z", pontos_fidelidade: 560, nivel_fidelidade: "Prata", data_nascimento: "1991-01-08", ultimo_pedido_data: "2026-02-25" },
+    { id: "c10", nome: "Thiago Martins", email: "thiago@email.com", telefone: "(85) 98888-1010", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "new", recencia_dias: 1, total_pedidos: 1, receita_total: 290, ultimo_contato: "2026-03-19T20:00:00Z", proximo_contato_permitido: "2026-03-21T20:00:00Z", created_at: "2026-03-18T00:00:00Z", pontos_fidelidade: 30, nivel_fidelidade: "Bronze", data_nascimento: "1997-06-29", ultimo_pedido_data: "2026-03-19" },
+    { id: "c11", nome: "Isabela Souza", email: "isabela@email.com", telefone: "(85) 98888-1111", marca_id: "prls", loja_id: "loja1", vendedor_id: "u5", segmento_rfm: "at_risk", recencia_dias: 75, total_pedidos: 3, receita_total: 920, ultimo_contato: "2026-01-05T09:00:00Z", proximo_contato_permitido: "2026-01-07T09:00:00Z", created_at: "2025-04-10T00:00:00Z", pontos_fidelidade: 210, nivel_fidelidade: "Bronze", data_nascimento: "1994-10-15", ultimo_pedido_data: "2025-12-28" },
+    { id: "c12", nome: "Daniel Gomes", email: "daniel@email.com", telefone: "(85) 98888-1212", marca_id: "prls", loja_id: "loja2", vendedor_id: "u4", segmento_rfm: "champion", recencia_dias: 7, total_pedidos: 10, receita_total: 5300, ultimo_contato: "2026-03-13T11:00:00Z", proximo_contato_permitido: "2026-03-15T11:00:00Z", created_at: "2025-02-01T00:00:00Z", pontos_fidelidade: 5800, nivel_fidelidade: "Diamante", data_nascimento: "1987-04-05", ultimo_pedido_data: "2026-03-13" },
   ],
 
   metas: [
@@ -313,6 +323,66 @@ export const DB_FALLBACK = {
     { id: "rr6", marca_id: "prls", categoria: "saudacao", titulo: "Retorno rápido", texto: "Oi {nome_cliente}! Vi sua mensagem e já estou cuidando disso. Te retorno em instantes! ⚡", usos: 18 },
     { id: "rr7", marca_id: "prls", categoria: "promocao", titulo: "Desconto fidelidade", texto: "Oi {nome_cliente}! Como cliente {nome_marca}, você tem {pontos_fidelidade} pontos! Quer usar pra ganhar desconto? ⭐", usos: 12 },
   ],
+
+  // ── Contatos Agendados ────────────────────────────────────────────────────
+  contatos_agendados: [
+    { id: "ag1", cliente_id: "c1", vendedor_id: "u2", marca_id: "prls", data: "2026-03-20", hora: "10:00", tipo: "whatsapp", observacao: "Perguntar sobre a compra da semana passada", status: "pendente", created_at: "2026-03-18T10:00:00Z" },
+    { id: "ag2", cliente_id: "c3", vendedor_id: "u5", marca_id: "prls", data: "2026-03-20", hora: "14:30", tipo: "ligacao", observacao: "Oferecer coleção nova, cliente em risco", status: "pendente", created_at: "2026-03-19T08:00:00Z" },
+    { id: "ag3", cliente_id: "c2", vendedor_id: "u2", marca_id: "prls", data: "2026-03-19", hora: "09:00", tipo: "whatsapp", observacao: "Follow-up pós-venda", status: "atrasado", created_at: "2026-03-17T15:00:00Z" },
+    { id: "ag4", cliente_id: "c4", vendedor_id: "u4", marca_id: "prls", data: "2026-03-21", hora: "11:00", tipo: "whatsapp", observacao: "Agradecer última compra, mostrar novidades", status: "pendente", created_at: "2026-03-19T10:00:00Z" },
+    { id: "ag5", cliente_id: "c7", vendedor_id: "u4", marca_id: "prls", data: "2026-03-22", hora: "15:00", tipo: "email", observacao: "Enviar catálogo de verão", status: "pendente", created_at: "2026-03-19T14:00:00Z" },
+    { id: "ag6", cliente_id: "c9", vendedor_id: "u2", marca_id: "prls", data: "2026-03-20", hora: "16:00", tipo: "ligacao", observacao: "Verificar satisfação com última compra", status: "pendente", created_at: "2026-03-18T16:00:00Z" },
+    { id: "ag7", cliente_id: "c5", vendedor_id: "u4", marca_id: "prls", data: "2026-03-18", hora: "10:00", tipo: "whatsapp", observacao: "Reativação de cliente em risco", status: "atrasado", created_at: "2026-03-16T08:00:00Z" },
+    { id: "ag8", cliente_id: "c12", vendedor_id: "u4", marca_id: "prls", data: "2026-03-23", hora: "09:30", tipo: "whatsapp", observacao: "Oferta exclusiva cliente diamante", status: "pendente", created_at: "2026-03-20T07:00:00Z" },
+    { id: "ag9", cliente_id: "c6", vendedor_id: "u2", marca_id: "prls", data: "2026-03-21", hora: "10:30", tipo: "whatsapp", observacao: "Primeiro follow-up pós-compra", status: "pendente", created_at: "2026-03-19T12:00:00Z" },
+  ],
+
+  // ── Registros de Interação ───────────────────────────────────────────────
+  registros_interacao: [
+    { id: "ri1", cliente_id: "c1", vendedor_id: "u2", marca_id: "prls", tipo: "observacao", texto: "Cliente prefere WhatsApp, não atende ligação", tags: ["prefere_whatsapp"], created_at: "2026-03-15T10:00:00Z" },
+    { id: "ri2", cliente_id: "c1", vendedor_id: "u2", marca_id: "prls", tipo: "preferencia", texto: "Sempre compra pra esposa, tamanho 37", tags: ["compra_presente"], created_at: "2026-03-10T14:00:00Z" },
+    { id: "ri3", cliente_id: "c3", vendedor_id: "u5", marca_id: "prls", tipo: "objecao", texto: "Reclamou do preço da última coleção, sensível a desconto", tags: ["sensivel_preco"], created_at: "2026-03-12T09:00:00Z" },
+    { id: "ri4", cliente_id: "c4", vendedor_id: "u4", marca_id: "prls", tipo: "feedback", texto: "Adorou o atendimento, elogiou a embalagem nova", tags: ["satisfeito"], created_at: "2026-03-18T11:00:00Z" },
+    { id: "ri5", cliente_id: "c5", vendedor_id: "u4", marca_id: "prls", tipo: "info", texto: "Mudou de endereço, novo CEP 60811-341", tags: [], created_at: "2026-03-01T09:00:00Z" },
+    { id: "ri6", cliente_id: "c12", vendedor_id: "u4", marca_id: "prls", tipo: "preferencia", texto: "Coleciona tênis, sempre quer lançamentos antes de todo mundo", tags: ["colecionador", "vip"], created_at: "2026-03-05T16:00:00Z" },
+  ],
+
+  // ── Permissões Config ────────────────────────────────────────────────────
+  permissoes_config: {
+    dono: { ver_dashboard: true, ver_todos_clientes: true, editar_clientes: true, transferir_clientes: true, ver_campanhas: true, criar_campanhas: true, ver_relatorios: true, exportar_dados: true, configurar_marca: true, gerenciar_equipe: true, ver_financeiro: true, ver_fidelidade: true, config_automacoes: true },
+    gerente: { ver_dashboard: true, ver_todos_clientes: true, editar_clientes: true, transferir_clientes: true, ver_campanhas: true, criar_campanhas: false, ver_relatorios: true, exportar_dados: false, configurar_marca: false, gerenciar_equipe: true, ver_financeiro: false, ver_fidelidade: true, config_automacoes: false },
+    vendedor: { ver_dashboard: true, ver_todos_clientes: false, editar_clientes: true, transferir_clientes: false, ver_campanhas: false, criar_campanhas: false, ver_relatorios: false, exportar_dados: false, configurar_marca: false, gerenciar_equipe: false, ver_financeiro: false, ver_fidelidade: false, config_automacoes: false },
+  },
+
+  // ── Relatórios Mock ──────────────────────────────────────────────────────
+  relatorios_mock: {
+    vendas_mensal: [
+      { mes: "Out/25", receita: 38400, pedidos: 142 },
+      { mes: "Nov/25", receita: 42100, pedidos: 156 },
+      { mes: "Dez/25", receita: 51200, pedidos: 198 },
+      { mes: "Jan/26", receita: 44800, pedidos: 167 },
+      { mes: "Fev/26", receita: 48200, pedidos: 175 },
+      { mes: "Mar/26", receita: 39100, pedidos: 145 },
+    ],
+    campanhas_performance: [
+      { nome: "Reativação 90d", enviados: 247, abertos: 189, convertidos: 43, receita: 18420, tipo: "whatsapp" },
+      { nome: "Black Friday", enviados: 523, abertos: 412, convertidos: 87, receita: 42800, tipo: "email" },
+      { nome: "Pós-venda", enviados: 156, abertos: 134, convertidos: 28, receita: 8900, tipo: "whatsapp" },
+      { nome: "Aniversário VIP", enviados: 89, abertos: 78, convertidos: 34, receita: 15200, tipo: "whatsapp" },
+      { nome: "Coleção Verão", enviados: 310, abertos: 245, convertidos: 52, receita: 28600, tipo: "email" },
+    ],
+    equipe_performance: [
+      { vendedor: "Ana Souza", vendedor_id: "u2", contatos: 312, meta_pct: 78, vendas: 32400, ticket_medio: 285 },
+      { vendedor: "Beatriz Lima", vendedor_id: "u4", contatos: 387, meta_pct: 92, vendas: 41200, ticket_medio: 320 },
+      { vendedor: "Rafael Oliveira", vendedor_id: "u5", contatos: 198, meta_pct: 53, vendas: 18900, ticket_medio: 264 },
+    ],
+    clientes_novos_mensal: [
+      { mes: "Out", novos: 45 }, { mes: "Nov", novos: 52 }, { mes: "Dez", novos: 78 },
+      { mes: "Jan", novos: 41 }, { mes: "Fev", novos: 55 }, { mes: "Mar", novos: 38 },
+    ],
+    taxa_recompra: 34.2,
+    churn_mensal: 5.8,
+  },
 
   inbox_conversas: [
     {

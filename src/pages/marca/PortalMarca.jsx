@@ -30,6 +30,10 @@ import GestaoQRCodes from "./GestaoQRCodes";
 import Fidelidade from "./Fidelidade";
 import IndiqueCashback from "./IndiqueCashback";
 import RespostasRapidas from "./RespostasRapidas";
+import AgendaContatos from "./AgendaContatos";
+import ContatosProativos from "./ContatosProativos";
+import GestaoVendedores from "./GestaoVendedores";
+import Permissoes from "./Permissoes";
 
 const STYLES_IMPORT = null; // CSS is now in global.css
 
@@ -94,6 +98,10 @@ function PortalMarca({ user, onLogout, dark, onToggleDark }) {
           {page === "fidelidade" && (isAdmin || isSup) && <Fidelidade user={user} />}
           {page === "indicacoes" && (isAdmin || isSup) && <IndiqueCashback user={user} />}
           {page === "respostas" && <RespostasRapidas user={user} />}
+          {page === "agenda_contatos" && <AgendaContatos user={user} />}
+          {page === "sugestoes" && <ContatosProativos user={user} />}
+          {page === "gestao_vendedores" && isSup && <GestaoVendedores user={user} />}
+          {page === "permissoes" && isAdmin && <Permissoes user={user} />}
         </div>
       </div>
     </div>

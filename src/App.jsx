@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ToastProvider } from "./context/ToastContext";
+import { registerServiceWorker } from "./lib/push";
 import { logout as apiLogout } from "./lib/api";
 import Login from "./pages/Login";
 import PortalOwner from "./pages/owner/PortalOwner";
@@ -9,6 +10,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [dark, setDark] = useState(() => { try { return localStorage.getItem("crm_dark")==="true" } catch{return false} });
   useEffect(() => { document.documentElement.setAttribute("data-theme", dark?"dark":"light") }, [dark]);
+  useEffect(() => { registerServiceWorker() }, []);
   const onToggleDark = () => setDark(d=>{const n=!d;localStorage.setItem("crm_dark",String(n));return n});
 
   const handleLogin = async (loginData) => {

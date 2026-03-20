@@ -7,7 +7,7 @@ const { Pool } = pg;
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL || "postgresql://crm:crm2026miner@localhost:5432/crmminer" });
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE || "prlsteste.myshopify.com";
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN || "REMOVED";
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN || "";
 const MARCA_ID = "a0000000-0000-0000-0000-000000000001";
 
 async function shopifyFetch(endpoint) {

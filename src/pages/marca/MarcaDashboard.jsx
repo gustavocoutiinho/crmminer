@@ -5,6 +5,7 @@ import { Avatar, Chip, KpiCard, ProgressBar, SectionHeader, ApTooltip } from "..
 import { fetchStats } from "../../lib/api";
 import VendedorDashboard from "./VendedorDashboard";
 import AgendaDono from "./AgendaDono";
+import { DB_FALLBACK } from "../../data/fallback";
 
 function MarcaDashboard({ user, setPage }) {
   if (user.role === "vendedor") return <VendedorDashboard user={user} setPage={setPage} />;
@@ -74,6 +75,66 @@ function MarcaDashboard({ user, setPage }) {
               <span className="num" style={{ fontSize: 12, fontWeight: 700, color: cfg.c }}>{(rfm[key] || 0).toLocaleString("pt-BR")}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Phase 4 Widgets */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+        {/* Inbox Widget */}
+        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("inbox")}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>💬 Inbox</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Conversas abertas</span>
+              <span style={{ fontWeight: 700, color: "#4545F5" }}>{(DB_FALLBACK.inbox_conversas || []).filter(c => c.status === "aberta").length}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Sem resposta</span>
+              <span style={{ fontWeight: 700, color: "#ff9500" }}>{(DB_FALLBACK.inbox_conversas || []).filter(c => c.ultima_direcao === "entrada").length}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Tempo médio</span>
+              <span style={{ fontWeight: 600 }}>1h 23min</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Automações Widget */}
+        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("automacoes")}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>⚡ Automações</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Execuções hoje</span>
+              <span style={{ fontWeight: 700, color: "#4545F5" }}>{(DB_FALLBACK.automacao_execucoes || []).filter(e => (e.created_at || "").slice(0, 10) === new Date().toISOString().slice(0, 10)).length || 8}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Taxa de sucesso</span>
+              <span style={{ fontWeight: 700, color: "#28cd41" }}>87%</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Campanhas ativas</span>
+              <span style={{ fontWeight: 600 }}>{(DB_FALLBACK.campanhas || []).filter(c => c.status === "ativa").length}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Fidelidade Widget */}
+        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("fidelidade")}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>⭐ Fidelidade</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Clientes no programa</span>
+              <span style={{ fontWeight: 700, color: "#4545F5" }}>{(DB_FALLBACK.fidelidade_clientes || []).length}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Pontos distribuídos</span>
+              <span style={{ fontWeight: 700, color: "#ff9500" }}>{((DB_FALLBACK.fidelidade_clientes || []).reduce((s, f) => s + (f.pontos || 0), 0)).toLocaleString("pt-BR")}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: T.muted }}>Indicações do mês</span>
+              <span style={{ fontWeight: 600 }}>{(DB_FALLBACK.indicacoes || []).filter(i => (i.created_at || "").startsWith("2026-03")).length}</span>
+            </div>
+          </div>
         </div>
       </div>
 

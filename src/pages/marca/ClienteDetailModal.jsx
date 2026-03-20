@@ -4,6 +4,7 @@ import { Avatar, Chip, Modal } from "../../components/UI";
 import { fetchClienteDetail, updateRecord, fetchTags, addClienteTag, removeClienteTag, addTimelineEntry } from "../../lib/api";
 import { RFM_CFG } from "../../lib/theme";
 import { timelineRelative, timelineDateGroup } from "../../utils/helpers";
+import FidelidadeCliente from "./FidelidadeCliente";
 
 function ClienteTagsEditor({ clienteId, currentTags, onUpdate }) {
   const [allTags, setAllTags] = useState([]);
@@ -218,7 +219,7 @@ function ClienteDetailModal({ clienteId, onClose }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Tabs */}
           <div className="seg">
-            {[{ k: "resumo", l: "Resumo" }, { k: "pedidos", l: `Pedidos (${pedidos.length})` }, { k: "timeline", l: "Timeline" }].map((t) => (
+            {[{ k: "resumo", l: "Resumo" }, { k: "pedidos", l: `Pedidos (${pedidos.length})` }, { k: "timeline", l: "Timeline" }, { k: "fidelidade", l: "⭐ Fidelidade" }].map((t) => (
               <button key={t.k} className={`seg-btn ${tab === t.k ? "on" : ""}`} onClick={() => setTab(t.k)}>{t.l}</button>
             ))}
           </div>
@@ -289,6 +290,11 @@ function ClienteDetailModal({ clienteId, onClose }) {
           {/* ── Tab: Timeline ── */}
           {tab === "timeline" && (
             <TimelineTab timeline={timeline} clienteId={clienteId} onNewEntry={(entry) => setDetail(prev => ({ ...prev, timeline: [entry, ...prev.timeline] }))} />
+          )}
+
+          {/* ── Tab: Fidelidade ── */}
+          {tab === "fidelidade" && (
+            <FidelidadeCliente clienteId={clienteId} />
           )}
         </div>
       )}

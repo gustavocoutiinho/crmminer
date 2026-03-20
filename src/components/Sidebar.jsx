@@ -30,7 +30,12 @@ function Sidebar({ page, setPage, user, onLogout, isOwner = false, className = "
       { key: "pipeline", icon: "🔀", label: "Pipeline", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "campanhas", icon: "📢", label: "Campanhas", roles: ["miner", "dono"] },
       { key: "automacoes", icon: "⚡", label: "Automações", roles: ["miner", "dono"] },
+      { key: "respostas", icon: "⚡", label: "Respostas Rápidas", roles: ["miner", "dono", "gerente", "vendedor"] },
       { key: "relatorios", icon: "📊", label: "Relatórios", roles: ["miner", "dono", "gerente"] },
+    ]},
+    { group: "Retenção", items: [
+      { key: "fidelidade", icon: "⭐", label: "Fidelidade", roles: ["miner", "dono", "gerente"] },
+      { key: "indicacoes", icon: "🤝", label: "Indicações", roles: ["miner", "dono", "gerente"] },
     ]},
     { group: "Dados", items: [
       { key: "inteligencia", icon: "🧠", label: "Inteligência", roles: ["miner", "dono", "gerente"] },

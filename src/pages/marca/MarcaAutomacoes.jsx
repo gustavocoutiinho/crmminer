@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, Modal, FormRow, Lbl, KpiCard, SectionHeader, Toggle } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
 import { fetchAutomacoes, fetchAutomacao, updateAutomacao, createAutomacao, previewAutomacao, deleteAutomacao, fetchAutoExecucoes, duplicateAutomacao } from "../../lib/api";
+import { DB_FALLBACK } from "../../data/fallback";
+import AutomacaoExecutor from "./AutomacaoExecutor";
+import AutomacaoPrioridade from "./AutomacaoPrioridade";
+import useAutomationEngine from "../../hooks/useAutomationEngine";
 
 function MarcaAutomacoes({ user }) {
   const toast = useToast();
@@ -270,7 +274,7 @@ function MarcaAutomacoes({ user }) {
 
       {/* Tab toggle */}
       <div className="seg" style={{ display: "inline-flex", gap: 2, marginBottom: 16 }}>
-        {[{ k: "automacoes", l: "\u26A1 Automa\u00E7\u00F5es" }, { k: "execucoes", l: "\u{1F4CB} Execu\u00E7\u00F5es" }].map((t) => (
+        {[{ k: "automacoes", l: "\u26A1 Automa\u00E7\u00F5es" }, { k: "execucoes", l: "\u{1F4CB} Execu\u00E7\u00F5es" }, { k: "executor", l: "\u{1F680} Engine" }, { k: "prioridade", l: "\u{1F4CA} Prioridade" }].map((t) => (
           <button key={t.k} className={`seg-btn ${view === t.k ? "on" : ""}`} onClick={() => setView(t.k)}>{t.l}</button>
         ))}
       </div>
@@ -312,7 +316,8 @@ function MarcaAutomacoes({ user }) {
                   {a.template.length > 80 ? a.template.slice(0, 80) + "\u2026" : a.template}
                 </div>
               )}
-              <div style={{ marginTop: 10, marginLeft: 58, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ marginTop: 10, marginLeft: 58, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <button className="ap-btn ap-btn-sm" onClick={() => { setView("executor"); }} style={{ fontSize: 11, background: "#4545F5", color: "#fff", border: "none" }}>{"▶ Executar"}</button>
                 <button className="ap-btn ap-btn-sm" onClick={() => setEditItem(a)} style={{ fontSize: 11 }}>{"\u270F\uFE0F Editar"}</button>
                 <button className="ap-btn ap-btn-sm" onClick={() => handlePreview(a)} style={{ fontSize: 11 }}>{"\u{1F441} Preview"}</button>
                 <button className="ap-btn ap-btn-sm" onClick={() => handleDuplicate(a)} style={{ fontSize: 11 }}>{"\u{1F4CB} Duplicar"}</button>
@@ -364,6 +369,12 @@ function MarcaAutomacoes({ user }) {
           )}
         </div>
       )}
+
+      {/* View: Engine (Executor) */}
+      {view === "executor" && <AutomacaoExecutor user={user} />}
+
+      {/* View: Prioridade */}
+      {view === "prioridade" && <AutomacaoPrioridade user={user} />}
 
       {showCreate && <AutomacaoForm onClose={() => setShowCreate(false)} />}
       {editItem && <AutomacaoForm item={editItem} onClose={() => { setEditItem(null); }} />}

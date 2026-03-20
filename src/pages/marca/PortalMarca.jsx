@@ -27,6 +27,9 @@ import MeuPerfil from "./MeuPerfil";
 import MetasVendedor from "./MetasVendedor";
 import MeuQRCode from "./MeuQRCode";
 import GestaoQRCodes from "./GestaoQRCodes";
+import Fidelidade from "./Fidelidade";
+import IndiqueCashback from "./IndiqueCashback";
+import RespostasRapidas from "./RespostasRapidas";
 
 const STYLES_IMPORT = null; // CSS is now in global.css
 
@@ -88,6 +91,9 @@ function PortalMarca({ user, onLogout, dark, onToggleDark }) {
           {page === "metas" && <MetasVendedor user={user} />}
           {page === "meuqr" && user.role === "vendedor" && <MeuQRCode user={user} />}
           {page === "qrcodes" && isAdmin && <GestaoQRCodes user={user} />}
+          {page === "fidelidade" && (isAdmin || isSup) && <Fidelidade user={user} />}
+          {page === "indicacoes" && (isAdmin || isSup) && <IndiqueCashback user={user} />}
+          {page === "respostas" && <RespostasRapidas user={user} />}
         </div>
       </div>
     </div>

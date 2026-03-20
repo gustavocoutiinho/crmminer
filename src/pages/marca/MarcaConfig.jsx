@@ -6,6 +6,7 @@ import { useSupabaseQuery } from "../../lib/hooks";
 import { updateRecord } from "../../lib/api";
 import { PLANOS } from "../../utils/helpers";
 import TagsManager from "./TagsManager";
+import { requestNotificationPermission, sendLocalPushMock } from "../../lib/push";
 
 function MarcaConfig({ user }) {
   const toast = useToast();
@@ -53,6 +54,23 @@ function MarcaConfig({ user }) {
     { l: "Alertas de churn", on: true },
     { l: "Relatório semanal", on: false },
   ]);
+
+  const [pushEnabled, setPushEnabled] = useState(() => "Notification" in window && Notification.permission === "granted");
+
+  const toggleWebPush = async () => {
+    if ("Notification" in window) {
+      if (Notification.permission === "default" || Notification.permission === "denied") {
+        const perm = await requestNotificationPermission();
+        setPushEnabled(perm === "granted");
+        if (perm === "granted") toast("Notificações ativadas com sucesso!", "success");
+        else toast("Permissão negada pelo navegador", "error");
+      } else if (Notification.permission === "granted") {
+        toast("Para desativar crm.minerbz.com.br, altere as configurações do navegador.", "success");
+      }
+    } else {
+      toast("Notificações não suportadas neste navegador.", "error");
+    }
+  };
 
   const sf = (k, v) => setF((x) => ({ ...x, [k]: v }));
 
@@ -168,6 +186,22 @@ function MarcaConfig({ user }) {
               <Toggle checked={n.on} onChange={() => setNotifs((a) => a.map((x, j) => (j === i ? { ...x, on: !x.on } : x)))} />
             </div>
           ))}
+          
+          <div className="divider" />
+          
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Notificações Push (Navegador)</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Notificações neste dispositivo</div>
+              <div style={{ fontSize: 12, color: T.muted }}>Seja alertado sobre vendas e mensagens importantes</div>
+            </div>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              {pushEnabled && (
+                <button className="ap-btn ap-btn-secondary ap-btn-sm" onClick={() => sendLocalPushMock("CRM Miner", "O Web Push nativo está configurado e funcionando! 🎉")}>Testar Push</button>
+              )}
+              <Toggle checked={pushEnabled} onChange={toggleWebPush} />
+            </div>
+          </div>
         </div>
       )}
     </div>

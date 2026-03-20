@@ -8,6 +8,7 @@ import OnboardingBanner from "../../components/OnboardingBanner";
 import { fetchOnboarding, skipOnboarding } from "../../lib/api";
 import MarcaDashboard from "./MarcaDashboard";
 import MarcaEquipe from "./MarcaEquipe";
+import GestaoLojas from "./GestaoLojas";
 import MarcaRanking from "./MarcaRanking";
 import MarcaInbox from "./MarcaInbox";
 import MarcaClientes from "./MarcaClientes";
@@ -77,6 +78,7 @@ function PortalMarca({ user, onLogout, dark, onToggleDark }) {
           )}
           {page === "perfil" && <MeuPerfil user={user} onLogout={onLogout} />}
           {page === "dashboard" && <MarcaDashboard user={user} setPage={setPage} />}
+          {page === "lojas" && isAdmin && <GestaoLojas user={user} setPage={setPage} />}
           {page === "equipe" && isSup && <MarcaEquipe isAdmin={isAdmin} user={user} />}
           {page === "ranking" && <MarcaRanking user={user} />}
           {page === "inbox" && <MarcaInbox user={user} />}

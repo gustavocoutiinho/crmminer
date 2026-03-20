@@ -19,6 +19,7 @@ function Sidebar({ page, setPage, user, onLogout, isOwner = false, className = "
   const marcaNav = [
     { key: "dashboard", icon: "⬡", label: "Dashboard", roles: ["miner", "dono", "gerente", "vendedor"] },
     { group: "Gestão", items: [
+      { key: "lojas", icon: "🏪", label: "Lojas", roles: ["miner", "dono"] },
       { key: "equipe", icon: "👥", label: "Equipe", roles: ["miner", "dono", "gerente"] },
       { key: "gestao_vendedores", icon: "🧑‍💼", label: "Gestão Vendedores", roles: ["miner", "dono", "gerente"] },
       { key: "metas", icon: "🎯", label: "Metas", roles: ["miner", "dono", "gerente", "vendedor"] },

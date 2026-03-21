@@ -9,7 +9,7 @@ import { DB_FALLBACK } from "../../data/fallback";
 const RFM_LABEL = { champion: "Campeão", loyal: "Fiel", potential: "Potencial", at_risk: "Em Risco", em_risco: "Em Risco", hibernating: "Inativo", new: "Novo" };
 
 function ContatosProativos({ user }) {
-  const marcaId = user?.marca_id || user?.marcaId || "prls";
+  const marcaId = user?.marca_id || user?.marcaId || "demo";
   const { sugestoes, meta } = useContatosProativos(user, marcaId);
   const toast = useToast();
   const [pulados, setPulados] = useState([]);

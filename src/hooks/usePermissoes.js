@@ -21,7 +21,7 @@ const PERMISSOES_LABELS = {
 
 export function usePermissoes(user) {
   const role = user?.role || "vendedor";
-  const isAdmin = role === "dono" || role === "miner";
+  const isAdmin = role === "admin" || role === "miner";
 
   const [permissoes, setPermissoes] = useState(() => {
     try {

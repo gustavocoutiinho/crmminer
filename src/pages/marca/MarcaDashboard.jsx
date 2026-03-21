@@ -4,7 +4,7 @@ import { T, ROLE_CFG, RFM_CFG } from "../../lib/theme";
 import { Avatar, Chip, KpiCard, ProgressBar, SectionHeader, ApTooltip } from "../../components/UI";
 import { fetchStats } from "../../lib/api";
 import VendedorDashboard from "./VendedorDashboard";
-import AgendaDono from "./AgendaDono";
+import AgendaAdmin from "./AgendaAdmin";
 import { DB_FALLBACK } from "../../data/fallback";
 
 function MarcaDashboard({ user, setPage }) {
@@ -47,7 +47,7 @@ function MarcaDashboard({ user, setPage }) {
         <KpiCard label="Ticket Médio" value={`R$ ${tm.toFixed(0)}`} sub="por pedido" color="#ff9500" icon="📊" />
       </div>
 
-      <AgendaDono onViewCliente={(id) => { if (setPage) setPage("clientes"); }} />
+      <AgendaAdmin onViewCliente={(id) => { if (setPage) setPage("clientes"); }} />
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 16 }}>
         <div className="ap-card" style={{ padding: "22px 24px" }}>
@@ -83,7 +83,7 @@ function MarcaDashboard({ user, setPage }) {
         <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("gestao_vendedores")}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>👥 Status da Equipe</div>
           {(() => {
-            const vendedores = DB_FALLBACK.usuarios.filter(u => u.marca_id === (user?.marca_id || user?.marcaId || "prls") && u.role === "vendedor");
+            const vendedores = DB_FALLBACK.usuarios.filter(u => u.marca_id === (user?.marca_id || user?.marcaId || "demo") && u.role === "vendedor");
             const ativos = vendedores.filter(v => v.status_trabalho === "ativo").length;
             const ausentes = vendedores.filter(v => v.status_trabalho !== "ativo" && v.status_trabalho !== "desligado").length;
             return (

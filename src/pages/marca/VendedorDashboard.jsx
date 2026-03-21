@@ -85,7 +85,7 @@ function CarteiraWidget({ user }) {
 }
 
 function RankingWidget({ user }) {
-  const vendedores = DB_FALLBACK.usuarios.filter(u => u.role === "vendedor" && u.marca_id === (user.marca_id || user.marcaId || "prls"));
+  const vendedores = DB_FALLBACK.usuarios.filter(u => u.role === "vendedor" && u.marca_id === (user.marca_id || user.marcaId || "demo"));
   const ranked = vendedores.map(v => {
     const m = DB_FALLBACK.metas.find(mt => mt.user_id === v.id && mt.tipo === "vendas_mensais");
     const pct = m && m.valor_meta > 0 ? (m.valor_atual / m.valor_meta) * 100 : 0;
@@ -114,7 +114,7 @@ function RankingWidget({ user }) {
 function AgendaHojeWidget({ user, setPage }) {
   const today = new Date().toISOString().slice(0, 10);
   const agendados = (DB_FALLBACK.contatos_agendados || []).filter(
-    a => a.marca_id === (user?.marca_id || user?.marcaId || "prls") && a.data === today && a.status === "pendente"
+    a => a.marca_id === (user?.marca_id || user?.marcaId || "demo") && a.data === today && a.status === "pendente"
   ).slice(0, 3);
   const TIPO_ICON = { whatsapp: "💬", ligacao: "📞", email: "📧" };
 
@@ -142,7 +142,7 @@ function AgendaHojeWidget({ user, setPage }) {
 }
 
 function SugestoesWidget({ user, setPage }) {
-  const clientes = DB_FALLBACK.clientes.filter(c => c.marca_id === (user?.marca_id || user?.marcaId || "prls") && c.vendedor_id === user.id);
+  const clientes = DB_FALLBACK.clientes.filter(c => c.marca_id === (user?.marca_id || user?.marcaId || "demo") && c.vendedor_id === user.id);
   const urgentes = clientes.filter(c => c.segmento_rfm === "at_risk" || c.segmento_rfm === "hibernating" || c.recencia_dias > 30).slice(0, 3);
 
   return (

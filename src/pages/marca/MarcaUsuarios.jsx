@@ -10,7 +10,7 @@ function MarcaUsuarios({ user }) {
       <div style={{ background: "#eeeeff", border: "1px solid #4545F522", borderRadius: 14, padding: "14px 18px", marginBottom: 20 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#4545F5", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>Hierarquia de Permissões</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-          {[{ role: "dono", perms: ["Acesso total", "Criar/excluir usuários", "Configurar marca", "Ver todos os dados"] }, { role: "gerente", perms: ["Ver equipe toda", "Relatórios", "Editar clientes", "Sem acesso a config"] }, { role: "vendedor", perms: ["Seus clientes", "Suas tarefas", "Registrar vendas", "Sem acesso a config"] }].map((r, i) => (
+          {[{ role: "admin", perms: ["Acesso total", "Criar/excluir usuários", "Configurar marca", "Ver todos os dados"] }, { role: "gerente", perms: ["Ver equipe toda", "Relatórios", "Editar clientes", "Sem acesso a config"] }, { role: "vendedor", perms: ["Seus clientes", "Suas tarefas", "Registrar vendas", "Sem acesso a config"] }].map((r, i) => (
             <div key={i} style={{ background: ROLE_CFG[r.role].bg, border: `1px solid ${ROLE_CFG[r.role].c}22`, borderRadius: 12, padding: 12 }}>
               <Chip label={`${ROLE_CFG[r.role].icon} ${ROLE_CFG[r.role].label}`} c={ROLE_CFG[r.role].c} bg={`${ROLE_CFG[r.role].c}25`} />
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>

@@ -7,7 +7,7 @@ import useAutomationEngine from "../../hooks/useAutomationEngine";
 
 function AutomacaoExecutor({ user }) {
   const toast = useToast();
-  const marcaId = user?.marca_id || user?.marcaId || "prls";
+  const marcaId = user?.marca_id || user?.marcaId || "demo";
   const [autoExec, setAutoExec] = useState({});
 
   const automacoes = useMemo(() => {

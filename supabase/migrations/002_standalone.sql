@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
   email       TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   nome        TEXT NOT NULL,
-  role        TEXT DEFAULT 'vendedor' CHECK (role IN ('miner','dono','gerente','vendedor')),
+  role        TEXT DEFAULT 'vendedor' CHECK (role IN ('miner','admin','gerente','vendedor')),
   marca_id    UUID REFERENCES marcas(id) ON DELETE SET NULL,
   loja        TEXT,
   status      TEXT DEFAULT 'ativo' CHECK (status IN ('ativo','inativo')),
@@ -231,7 +231,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO users (id, email, password_hash, nome, role, marca_id)
 VALUES
   ('b0000000-0000-0000-0000-000000000001', 'gustavo@minerbz.com.br', crypt('miner2026', gen_salt('bf')), 'Gustavo Coutinho', 'miner', NULL),
-  ('b0000000-0000-0000-0000-000000000002', 'leonardo@prls.com.br', crypt('prls2026', gen_salt('bf')), 'Leonardo Umbelino', 'dono', 'a0000000-0000-0000-0000-000000000001'),
+  ('b0000000-0000-0000-0000-000000000002', 'leonardo@prls.com.br', crypt('prls2026', gen_salt('bf')), 'Leonardo Umbelino', 'admin', 'a0000000-0000-0000-0000-000000000001'),
   ('b0000000-0000-0000-0000-000000000003', 'squad@minerbz.com.br', crypt('squad2026', gen_salt('bf')), 'Squad Miner', 'gerente', 'a0000000-0000-0000-0000-000000000001')
 ON CONFLICT DO NOTHING;
 

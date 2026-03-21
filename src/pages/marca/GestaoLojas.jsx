@@ -27,14 +27,14 @@ export default function GestaoLojas({ user, setPage }) {
     loadData();
   }, []);
 
-  const gerentes = usuarios.filter(u => u.role === "gerente" || u.role === "dono");
+  const gerentes = usuarios.filter(u => u.role === "gerente" || u.role === "admin");
 
   const handleSave = () => {
     if (!formData.nome) return;
     if (editingId) {
       setLojas(prev => prev.map(l => l.id === editingId ? { ...l, ...formData } : l));
     } else {
-      setLojas(prev => [...prev, { id: "l_" + Date.now(), ...formData, marca_id: user?.marca_id || "prls", created_at: new Date().toISOString() }]);
+      setLojas(prev => [...prev, { id: "l_" + Date.now(), ...formData, marca_id: user?.marca_id || "demo", created_at: new Date().toISOString() }]);
     }
     setIsModalOpen(false);
   };
@@ -72,7 +72,7 @@ export default function GestaoLojas({ user, setPage }) {
   });
 
   const chartData = dataLojas.map(l => ({
-    name: l.nome.replace("PRLS ", "").substring(0, 15),
+    name: l.nome.substring(0, 15),
     vendas: l.vendasMes,
     clientes: l.clientesCount
   }));

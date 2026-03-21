@@ -223,7 +223,7 @@ function ClienteDetailModal({ clienteId, user, onClose }) {
         data_limite: agendaData,
         cliente_id: clienteId,
         responsavel_id: user?.id || null,
-        marca_id: user?.marca_id || user?.marcaId || "prls",
+        marca_id: user?.marca_id || user?.marcaId || "demo",
         concluida: false,
         status: "pendente"
       });

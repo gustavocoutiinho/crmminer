@@ -71,10 +71,10 @@ function MarcaClientes({ user }) {
   const [availableTags, setAvailableTags] = useState([]);
   const PER_PAGE = 50;
 
-  const isAdmin = user.role === "dono" || user.role === "miner";
+  const isAdmin = user.role === "admin" || user.role === "miner";
   const isSup = user.role === "gerente" || isAdmin;
 
-  const marca = DB_FALLBACK.marcas.find(m => m.id === (user.marca_id || user.marcaId || "prls"));
+  const marca = DB_FALLBACK.marcas.find(m => m.id === (user.marca_id || user.marcaId || "demo"));
   const configMarca = marca?.config || { intervalo_minimo_contato_horas: 48 };
 
   // Load tags

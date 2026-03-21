@@ -6,7 +6,7 @@ import { DB_FALLBACK } from "../../data/fallback";
 
 function Fidelidade({ user }) {
   const toast = useToast();
-  const marcaId = user?.marca_id || user?.marcaId || "prls";
+  const marcaId = user?.marca_id || user?.marcaId || "demo";
 
   const [config, setConfig] = useState(() => {
     return DB_FALLBACK.fidelidade_config || {

@@ -59,7 +59,7 @@ function RespostasRapidas({ user, onUseResposta, inModal = false }) {
     return (texto || "")
       .replace(/{nome_cliente}/g, previewCliente.nome)
       .replace(/{nome_vendedor}/g, user?.nome?.split(" ")[0] || "Vendedor")
-      .replace(/{nome_marca}/g, "PRLS Calçados")
+      .replace(/{nome_marca}/g, "Demo Store")
       .replace(/{ultimo_pedido}/g, "#4521")
       .replace(/{pontos_fidelidade}/g, previewCliente.pontos.toLocaleString("pt-BR"));
   };
@@ -97,7 +97,7 @@ function RespostasRapidas({ user, onUseResposta, inModal = false }) {
       } else {
         const newR = {
           id: `rr_${Date.now()}`,
-          marca_id: "prls",
+          marca_id: "demo",
           ...f,
           usos: 0,
         };

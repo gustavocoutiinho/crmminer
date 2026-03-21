@@ -6,7 +6,7 @@ import { DB_FALLBACK } from "../../data/fallback";
 
 function GestaoQRCodes({ user }) {
   const toast = useToast();
-  const marcaId = user.marca_id || user.marcaId || "prls";
+  const marcaId = user.marca_id || user.marcaId || "demo";
 
   const vendedores = useMemo(() => {
     return DB_FALLBACK.usuarios.filter(u =>

@@ -21,7 +21,7 @@ const FUNCIONALIDADES = [
 ];
 
 const ROLES = [
-  { key: "dono", label: "Dono", c: "#4545F5" },
+  { key: "admin", label: "Administrador", c: "#4545F5" },
   { key: "gerente", label: "Gerente", c: "#8e44ef" },
   { key: "vendedor", label: "Vendedor", c: "#ff9500" },
 ];
@@ -33,7 +33,7 @@ function Permissoes({ user }) {
   const [hasChanges, setHasChanges] = useState(false);
 
   const handleToggle = (role, key) => {
-    if (role === "dono") return; // Dono always has all permissions
+    if (role === "admin") return; // Admin always has all permissions
     setLocal(prev => {
       const next = { ...prev, [role]: { ...prev[role], [key]: !prev[role][key] } };
       setHasChanges(true);
@@ -93,7 +93,7 @@ function Permissoes({ user }) {
                       <Toggle
                         checked={local[r.key]?.[func.key] ?? false}
                         onChange={() => handleToggle(r.key, func.key)}
-                        disabled={r.key === "dono"}
+                        disabled={r.key === "admin"}
                       />
                     </div>
                   </td>
@@ -105,7 +105,7 @@ function Permissoes({ user }) {
       </div>
 
       <div style={{ marginTop: 14, fontSize: 12, color: T.muted, display: "flex", alignItems: "center", gap: 6 }}>
-        🔒 O cargo "Dono" sempre tem acesso total e não pode ser editado.
+        🔒 O cargo "Administrador" sempre tem acesso total e não pode ser editado.
       </div>
     </div>
   );

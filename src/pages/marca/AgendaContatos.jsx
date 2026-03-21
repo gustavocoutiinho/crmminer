@@ -15,7 +15,7 @@ const FILTROS = [
 ];
 
 function AgendaContatos({ user }) {
-  const marcaId = user?.marca_id || user?.marcaId || "prls";
+  const marcaId = user?.marca_id || user?.marcaId || "demo";
   const [agendados, setAgendados] = useState(() =>
     (DB_FALLBACK.contatos_agendados || []).filter(a => a.marca_id === marcaId)
   );

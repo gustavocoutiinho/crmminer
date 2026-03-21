@@ -93,7 +93,7 @@ function MetasVendedor({ user }) {
     });
   }, [metas]);
 
-  const isAdmin = user.role === "dono" || user.role === "miner" || user.role === "gerente";
+  const isAdmin = user.role === "admin" || user.role === "miner" || user.role === "gerente";
 
   return (
     <div className="fade-up">

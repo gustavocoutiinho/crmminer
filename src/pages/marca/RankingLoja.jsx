@@ -8,7 +8,7 @@ const MEDALS = { 1: "🥇", 2: "🥈", 3: "🥉" };
 function RankingLoja({ user }) {
   const ranking = useMemo(() => {
     const vendedores = DB_FALLBACK.usuarios.filter(u =>
-      u.role === "vendedor" && u.marca_id === (user.marca_id || user.marcaId || "prls")
+      u.role === "vendedor" && u.marca_id === (user.marca_id || user.marcaId || "demo")
     );
 
     return vendedores.map(v => {

@@ -68,7 +68,7 @@ function OwnerUsuarios() {
 
   const ROLE_OPTS = [
     { value: "miner", label: "🔱 Miner (Admin)" },
-    { value: "dono", label: "👑 Dono" },
+    { value: "admin", label: "👑 Administrador" },
     { value: "gerente", label: "📊 Gerente" },
     { value: "vendedor", label: "💼 Vendedor" },
   ];
@@ -109,7 +109,7 @@ function OwnerUsuarios() {
                   </td>
                   <td style={{ padding: "12px 14px", color: T.sub, fontSize: 12 }}>{u.email}</td>
                   <td style={{ padding: "12px 14px" }}>
-                    <Chip label={ROLE_OPTS.find(r => r.value === u.role)?.label || u.role} c={u.role === "miner" ? "#4545F5" : u.role === "dono" ? "#8e44ef" : u.role === "gerente" ? "#ff9500" : "#28cd41"} bg={u.role === "miner" ? "#4545F515" : u.role === "dono" ? "#8e44ef15" : u.role === "gerente" ? "#ff950015" : "#28cd4115"} />
+                    <Chip label={ROLE_OPTS.find(r => r.value === u.role)?.label || u.role} c={u.role === "miner" ? "#4545F5" : u.role === "admin" ? "#8e44ef" : u.role === "gerente" ? "#ff9500" : "#28cd41"} bg={u.role === "miner" ? "#4545F515" : u.role === "admin" ? "#8e44ef15" : u.role === "gerente" ? "#ff950015" : "#28cd4115"} />
                   </td>
                   <td style={{ padding: "12px 14px", fontSize: 12 }}>{u.marca_nome || <span style={{ color: T.muted }}>—</span>}</td>
                   <td style={{ padding: "12px 14px" }}>

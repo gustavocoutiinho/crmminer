@@ -53,7 +53,7 @@ function MarcaEquipe({ isAdmin, user }) {
           <div>
             <label className="lbl">Função</label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-              {["dono", "gerente", "vendedor"].map((r) => (
+              {["admin", "gerente", "vendedor"].map((r) => (
                 <div key={r} onClick={() => s("role", r)} style={{ padding: 12, borderRadius: 12, border: `2px solid ${f.role === r ? ROLE_CFG[r].c : "rgba(0,0,0,0.08)"}`, background: f.role === r ? ROLE_CFG[r].bg : "#fff", cursor: "pointer", textAlign: "center", transition: "all .15s" }}>
                   <div style={{ fontSize: 18, marginBottom: 4 }}>{ROLE_CFG[r].icon}</div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: f.role === r ? ROLE_CFG[r].c : T.sub }}>{ROLE_CFG[r].label}</div>
@@ -78,7 +78,7 @@ function MarcaEquipe({ isAdmin, user }) {
     <div className="fade-up">
       <SectionHeader tag="Gestão" title="Equipe" action={isAdmin && <button className="ap-btn ap-btn-primary" onClick={() => setShowModal(true)}>+ Novo Usuário</button>} />
       <div className="kpi-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
-        {[{ l: "Total", v: usuarios.length, c: "#4545F5" }, { l: "Donos", v: usuarios.filter((u) => u.role === "dono").length, c: "#4545F5" }, { l: "Gerentes", v: usuarios.filter((u) => u.role === "gerente").length, c: "#8e44ef" }, { l: "Vendedores", v: usuarios.filter((u) => u.role === "vendedor").length, c: "#28cd41" }].map((k, i) => <KpiCard key={i} label={k.l} value={k.v} color={k.c} />)}
+        {[{ l: "Total", v: usuarios.length, c: "#4545F5" }, { l: "Admins", v: usuarios.filter((u) => u.role === "admin").length, c: "#4545F5" }, { l: "Gerentes", v: usuarios.filter((u) => u.role === "gerente").length, c: "#8e44ef" }, { l: "Vendedores", v: usuarios.filter((u) => u.role === "vendedor").length, c: "#28cd41" }].map((k, i) => <KpiCard key={i} label={k.l} value={k.v} color={k.c} />)}
       </div>
       <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>

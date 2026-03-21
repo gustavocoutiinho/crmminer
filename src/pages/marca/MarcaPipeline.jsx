@@ -110,7 +110,7 @@ function MarcaPipeline({ user }) {
                   onClick={() => { setEditOp(op); setShowModal(true); setMenuId(null); }}>✏️ Editar</div>
                 <div style={{ padding: "9px 14px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,0.05)" }}
                   onClick={() => { setLoseModal(op); setMenuId(null); }}>❌ Marcar Perdido</div>
-                {(user.role === "miner" || user.role === "dono") && (
+                {(user.role === "miner" || user.role === "admin") && (
                   <div style={{ padding: "9px 14px", fontSize: 13, cursor: "pointer", color: "#ff3b30" }}
                     onClick={() => { handleDelete(op.id); setMenuId(null); }}>🗑 Excluir</div>
                 )}

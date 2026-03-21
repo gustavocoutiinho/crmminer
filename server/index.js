@@ -203,7 +203,7 @@ app.get("/api/data/:table", requireAuth(async (req, res) => {
   const { table } = req.params;
   if (!TABLES.includes(table)) return res.status(400).json({ error: "Invalid table" });
   // Restrict users table to admin roles
-  if (table === "users" && !["miner","dono","gerente"].includes(req.user.role)) {
+  if (table === "users" && !["miner","admin","gerente"].includes(req.user.role)) {
     return res.status(403).json({ error: "Sem permissão" });
   }
   const selectCols = table === "users"
@@ -363,7 +363,7 @@ app.get("/api/stats/advanced", requireAuth(async (req, res) => {
 
 // ── RFM Recalculate ──────────────────────────────────────────────────────────
 app.post("/api/rfm/recalculate", requireAuth(async (req, res) => {
-  if (req.user.role !== "miner" && req.user.role !== "dono") {
+  if (req.user.role !== "miner" && req.user.role !== "admin") {
     return res.status(403).json({ error: "Sem permissão" });
   }
   const marcaId = req.user.marca_id;
@@ -406,7 +406,7 @@ app.post("/api/rfm/recalculate", requireAuth(async (req, res) => {
 
 // ── Shopify Sync via API ─────────────────────────────────────────────────────
 app.post("/api/sync/shopify", requireAuth(async (req, res) => {
-  if (req.user.role !== "miner" && req.user.role !== "dono") {
+  if (req.user.role !== "miner" && req.user.role !== "admin") {
     return res.status(403).json({ error: "Sem permissão" });
   }
   const SHOPIFY_STORE = process.env.SHOPIFY_STORE || "prlsteste.myshopify.com";
@@ -549,7 +549,7 @@ app.get("/api/sync/logs", requireAuth(async (req, res) => {
 
 // ── Users management (admin) ─────────────────────────────────────────────────
 app.get("/api/users", requireAuth(async (req, res) => {
-  if (!["miner","dono","gerente"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin","gerente"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const marcaId = req.user.marca_id;
   const params = [];
   let where = "";
@@ -559,7 +559,7 @@ app.get("/api/users", requireAuth(async (req, res) => {
 }));
 
 app.post("/api/users", requireAuth(async (req, res) => {
-  if (req.user.role !== "miner" && req.user.role !== "dono") {
+  if (req.user.role !== "miner" && req.user.role !== "admin") {
     return res.status(403).json({ error: "Sem permissão" });
   }
   const { nome, email, password, role, loja, meta_mensal } = req.body;
@@ -764,7 +764,7 @@ app.get("/api/automacoes/:id", requireAuth(async (req, res) => {
 }));
 
 app.post("/api/automacoes", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const { nome, tipo, gatilho, acao, canal, template } = req.body;
   if (!nome || !tipo) return res.status(400).json({ error: "nome and tipo required" });
   const marcaId = req.user.marca_id || req.body.marca_id;
@@ -777,7 +777,7 @@ app.post("/api/automacoes", requireAuth(async (req, res) => {
 }));
 
 app.patch("/api/automacoes/:id", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const changes = { ...req.body }; delete changes.id; delete changes.created_at;
   if (changes.gatilho) changes.gatilho = JSON.stringify(changes.gatilho);
   if (changes.acao) changes.acao = JSON.stringify(changes.acao);
@@ -790,7 +790,7 @@ app.patch("/api/automacoes/:id", requireAuth(async (req, res) => {
 }));
 
 app.delete("/api/automacoes/:id", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   await q("DELETE FROM automacoes WHERE id = $1", [req.params.id]);
   res.json({ deleted: true });
 }));
@@ -865,7 +865,7 @@ app.get("/api/automacoes/:id/execucoes", requireAuth(async (req, res) => {
 
 // ── Duplicar Automação ──────────────────────────────────────────────────────
 app.post("/api/automacoes/:id/duplicate", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const [orig] = await q("SELECT * FROM automacoes WHERE id = $1", [req.params.id]);
   if (!orig) return res.status(404).json({ error: "Não encontrada" });
   const [dup] = await q(
@@ -891,7 +891,7 @@ app.get("/api/integracoes/:id", requireAuth(async (req, res) => {
 }));
 
 app.patch("/api/integracoes/:id", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const { config, status } = req.body;
   const sets = []; const vals = [];
   if (config) { sets.push(`config=$${vals.length+1}`); vals.push(JSON.stringify(config)); }
@@ -953,7 +953,7 @@ app.get("/api/templates", requireAuth(async (req, res) => {
 }));
 
 app.post("/api/templates", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const { nome, canal, categoria, assunto, corpo, variaveis } = req.body;
   if (!nome || !canal || !corpo) return res.status(400).json({ error: "nome, canal, corpo required" });
   const marcaId = req.user.marca_id || req.body.marca_id;
@@ -1039,7 +1039,7 @@ app.post("/api/suri/webhook", async (req, res) => {
 
 // ── Customer Intelligence ────────────────────────────────────────────────────
 app.post("/api/intelligence/churn-score", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const marcaId = req.user.marca_id;
   const w = marcaId ? "WHERE marca_id = $1" : "";
   const p = marcaId ? [marcaId] : [];
@@ -1377,7 +1377,7 @@ app.get("/api/oportunidades", requireAuth(async (req, res) => {
 app.post("/api/oportunidades", requireAuth(async (req, res) => {
   try {
     const r = req.user.role;
-    if (!["miner","dono","gerente","vendedor"].includes(r)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin","gerente","vendedor"].includes(r)) return res.status(403).json({ error: "Sem permissão" });
 
     const marcaId = req.user.marca_id;
     if (!marcaId) return res.status(400).json({ error: "marca_id required" });
@@ -1447,7 +1447,7 @@ app.patch("/api/oportunidades/:id", requireAuth(async (req, res) => {
 // DELETE /api/oportunidades/:id
 app.delete("/api/oportunidades/:id", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const [row] = await q("DELETE FROM oportunidades WHERE id = $1 AND marca_id = $2 RETURNING *", [req.params.id, marcaId]);
     if (!row) return res.status(404).json({ error: "Not found" });
@@ -1535,7 +1535,7 @@ app.post("/api/auth/change-password", requireAuth(async (req, res) => {
 
 // ── Import CSV ───────────────────────────────────────────────────────────────
 app.post("/api/import/clientes", requireAuth(async (req, res) => {
-  if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
   const marcaId = req.user.marca_id;
   if (!marcaId) return res.status(400).json({ error: "Marca obrigatória" });
 
@@ -1574,7 +1574,7 @@ app.post("/api/import/clientes", requireAuth(async (req, res) => {
 // ── API Keys CRUD ────────────────────────────────────────────────────────────
 app.get("/api/api-keys", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     if (!marcaId) return res.status(400).json({ error: "marca_id required" });
     const rows = await q("SELECT id, nome, key_prefix, permissions, ativo, last_used, created_at FROM api_keys WHERE marca_id = $1 ORDER BY created_at DESC", [marcaId]);
@@ -1584,7 +1584,7 @@ app.get("/api/api-keys", requireAuth(async (req, res) => {
 
 app.post("/api/api-keys", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     if (!marcaId) return res.status(400).json({ error: "marca_id required" });
     const { nome, permissions } = req.body;
@@ -1602,7 +1602,7 @@ app.post("/api/api-keys", requireAuth(async (req, res) => {
 
 app.delete("/api/api-keys/:id", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const [row] = await q("UPDATE api_keys SET ativo = false WHERE id = $1 AND marca_id = $2 RETURNING id", [req.params.id, marcaId]);
     if (!row) return res.status(404).json({ error: "Chave não encontrada" });
@@ -1613,7 +1613,7 @@ app.delete("/api/api-keys/:id", requireAuth(async (req, res) => {
 // ── Webhooks CRUD ────────────────────────────────────────────────────────────
 app.get("/api/webhooks", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     if (!marcaId) return res.status(400).json({ error: "marca_id required" });
     const rows = await q("SELECT id, nome, url, eventos, secret, ativo, ultimo_envio, ultimo_status, created_at FROM webhooks WHERE marca_id = $1 ORDER BY created_at DESC", [marcaId]);
@@ -1623,7 +1623,7 @@ app.get("/api/webhooks", requireAuth(async (req, res) => {
 
 app.post("/api/webhooks", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     if (!marcaId) return res.status(400).json({ error: "marca_id required" });
     const { nome, url, eventos, secret } = req.body;
@@ -1638,7 +1638,7 @@ app.post("/api/webhooks", requireAuth(async (req, res) => {
 
 app.patch("/api/webhooks/:id", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const allowed = ["nome", "url", "eventos", "secret", "ativo"];
     const sets = []; const vals = [req.params.id, marcaId]; let idx = 3;
@@ -1654,7 +1654,7 @@ app.patch("/api/webhooks/:id", requireAuth(async (req, res) => {
 
 app.delete("/api/webhooks/:id", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const [row] = await q("DELETE FROM webhooks WHERE id = $1 AND marca_id = $2 RETURNING id", [req.params.id, marcaId]);
     if (!row) return res.status(404).json({ error: "Webhook não encontrado" });
@@ -1664,7 +1664,7 @@ app.delete("/api/webhooks/:id", requireAuth(async (req, res) => {
 
 app.post("/api/webhooks/:id/test", requireAuth(async (req, res) => {
   try {
-    if (!["miner","dono"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const [wh] = await q("SELECT * FROM webhooks WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId]);
     if (!wh) return res.status(404).json({ error: "Webhook não encontrado" });
@@ -1698,7 +1698,7 @@ app.get("/api/tags", requireAuth(async (req, res) => {
 
 app.post("/api/tags", requireAuth(async (req, res) => {
   try {
-    if (req.user.role !== "miner" && req.user.role !== "dono") return res.status(403).json({ error: "Sem permissão" });
+    if (req.user.role !== "miner" && req.user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     if (!marcaId) return res.status(400).json({ error: "marca_id required" });
     const { nome, cor } = req.body;
@@ -1713,7 +1713,7 @@ app.post("/api/tags", requireAuth(async (req, res) => {
 
 app.patch("/api/tags/:id", requireAuth(async (req, res) => {
   try {
-    if (req.user.role !== "miner" && req.user.role !== "dono") return res.status(403).json({ error: "Sem permissão" });
+    if (req.user.role !== "miner" && req.user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const { nome, cor } = req.body;
     const [old] = await q("SELECT * FROM tags WHERE id = $1", [req.params.id]);
@@ -1738,7 +1738,7 @@ app.patch("/api/tags/:id", requireAuth(async (req, res) => {
 
 app.delete("/api/tags/:id", requireAuth(async (req, res) => {
   try {
-    if (req.user.role !== "miner" && req.user.role !== "dono") return res.status(403).json({ error: "Sem permissão" });
+    if (req.user.role !== "miner" && req.user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const [old] = await q("SELECT * FROM tags WHERE id = $1", [req.params.id]);
     if (!old) return res.status(404).json({ error: "Tag não encontrada" });

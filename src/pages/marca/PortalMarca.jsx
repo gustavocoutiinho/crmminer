@@ -44,7 +44,7 @@ function PortalMarca({ user, onLogout, dark, onToggleDark }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [onboarding, setOnboarding] = useState(null);
   const [onboardingDismissed, setOnboardingDismissed] = useState(() => localStorage.getItem("crm_onboard_done") === "1");
-  const isAdmin = user.role === "dono" || user.role === "miner";
+  const isAdmin = user.role === "admin" || user.role === "miner";
   const isSup = user.role === "gerente" || isAdmin;
 
   useEffect(() => {

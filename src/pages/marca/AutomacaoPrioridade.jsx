@@ -6,7 +6,7 @@ import { DB_FALLBACK } from "../../data/fallback";
 
 function AutomacaoPrioridade({ user }) {
   const toast = useToast();
-  const marcaId = user?.marca_id || user?.marcaId || "prls";
+  const marcaId = user?.marca_id || user?.marcaId || "demo";
 
   const [prioridades, setPrioridades] = useState(() => {
     const camps = DB_FALLBACK.campanhas || [];

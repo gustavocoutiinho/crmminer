@@ -10,7 +10,7 @@ function MeuQRCode({ user }) {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   const vendedor = DB_FALLBACK.usuarios.find(u => u.id === user.id) || user;
-  const marca = DB_FALLBACK.marcas.find(m => m.id === (user.marca_id || user.marcaId || "prls"));
+  const marca = DB_FALLBACK.marcas.find(m => m.id === (user.marca_id || user.marcaId || "demo"));
   const codigo = vendedor.codigo_vendedor || `${(marca?.nome || "MARCA").replace(/\s/g, "").substring(0, 4).toUpperCase()}-${user.nome.split(" ")[0].toUpperCase()}-001`;
   const marcaDomain = marca?.email?.split("@")[1] || "minerbz.com.br";
   const link = `https://${marcaDomain}/?ref=${codigo}`;

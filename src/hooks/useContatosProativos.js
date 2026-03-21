@@ -3,7 +3,7 @@ import { DB_FALLBACK } from "../data/fallback";
 
 export function useContatosProativos(user, marcaId) {
   return useMemo(() => {
-    const mId = marcaId || user?.marca_id || user?.marcaId || "prls";
+    const mId = marcaId || user?.marca_id || user?.marcaId || "demo";
     const clientes = DB_FALLBACK.clientes.filter(c => c.marca_id === mId);
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
@@ -12,7 +12,7 @@ export function useContatosProativos(user, marcaId) {
     const sugestoes = [];
 
     clientes.forEach(cli => {
-      // Only for this vendor (if vendedor), or all (if gerente/dono)
+      // Only for this vendor (if vendedor), or all (if gerente/admin)
       if (user.role === "vendedor" && cli.vendedor_id !== user.id) return;
 
       const motivos = [];

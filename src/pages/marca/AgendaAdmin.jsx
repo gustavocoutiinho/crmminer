@@ -4,7 +4,7 @@ import { Avatar } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
 import { fetchAgenda, fetchData } from "../../lib/api";
 
-function AgendaDono({ onViewCliente }) {
+function AgendaAdmin({ onViewCliente }) {
   const toast = useToast();
   const [acoes, setAcoes] = useState([]);
   const [tarefas, setTarefas] = useState([]);
@@ -93,4 +93,4 @@ function AgendaDono({ onViewCliente }) {
   );
 }
 
-export default AgendaDono;
+export default AgendaAdmin;

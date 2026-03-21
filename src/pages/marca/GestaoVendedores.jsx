@@ -14,7 +14,7 @@ const STATUS_CFG = {
 };
 
 function GestaoVendedores({ user }) {
-  const marcaId = user?.marca_id || user?.marcaId || "prls";
+  const marcaId = user?.marca_id || user?.marcaId || "demo";
   const [usuarios, setUsuarios] = useState(
     DB_FALLBACK.usuarios.filter(u => u.marca_id === marcaId && (u.role === "vendedor" || u.role === "gerente"))
   );

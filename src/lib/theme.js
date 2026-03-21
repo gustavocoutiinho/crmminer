@@ -62,7 +62,7 @@ export const PLANO_CFG = {
 
 export const ROLE_CFG = {
   miner: { label: "Miner", c: "#ff3b30", bg: "#ffe5e3", icon: "👑" },
-  dono: { label: "Dono", c: "#4545F5", bg: "#eeeeff", icon: "🔐" },
+  admin: { label: "Administrador", c: "#4545F5", bg: "#eeeeff", icon: "🔐" },
   gerente: { label: "Gerente", c: "#8e44ef", bg: "#f3ebff", icon: "📊" },
   vendedor: { label: "Vendedor", c: "#ff9500", bg: "#fff3e0", icon: "🏷" },
 };

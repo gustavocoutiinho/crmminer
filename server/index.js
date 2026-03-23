@@ -170,7 +170,10 @@ app.get("/api/stats", requireAuth(async (req, res) => {
 
 // ── Cliente detail + timeline ────────────────────────────────────────────────
 app.get("/api/clientes/:id", requireAuth(async (req, res) => {
-  const [cli] = await q("SELECT * FROM clientes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  const [cli] = marcaId
+    ? await q("SELECT * FROM clientes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT * FROM clientes WHERE id = $1", [req.params.id]);
   if (!cli) return res.status(404).json({ error: "Not found" });
   const pedidos = await q("SELECT * FROM pedidos WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT 20", [req.params.id]);
   const pedidosWithItems = await Promise.all(pedidos.map(async (p) => {
@@ -186,7 +189,10 @@ app.get("/api/clientes/:id", requireAuth(async (req, res) => {
 app.post("/api/clientes/:id/timeline", requireAuth(async (req, res) => {
   const { tipo, titulo, descricao } = req.body;
   if (!titulo) return res.status(400).json({ error: "Título obrigatório" });
-  const [cli] = await q("SELECT marca_id FROM clientes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  const [cli] = marcaId
+    ? await q("SELECT marca_id FROM clientes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT marca_id FROM clientes WHERE id = $1", [req.params.id]);
   if (!cli) return res.status(404).json({ error: "Cliente não encontrado" });
   const [entry] = await q(
     "INSERT INTO timeline (marca_id, cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4,$5) RETURNING *",
@@ -1002,7 +1008,10 @@ app.get("/api/automacoes", requireAuth(async (req, res) => {
 }));
 
 app.get("/api/automacoes/:id", requireAuth(async (req, res) => {
-  const [auto] = await q("SELECT * FROM automacoes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  const [auto] = marcaId
+    ? await q("SELECT * FROM automacoes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT * FROM automacoes WHERE id = $1", [req.params.id]);
   if (!auto) return res.status(404).json({ error: "Not found" });
   const execs = await q("SELECT * FROM automacao_execucoes WHERE automacao_id = $1 ORDER BY created_at DESC LIMIT 50", [req.params.id]);
   const [stats] = await q(`SELECT 
@@ -1029,6 +1038,7 @@ app.post("/api/automacoes", requireAuth(async (req, res) => {
 
 app.patch("/api/automacoes/:id", requireAuth(async (req, res) => {
   if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  const marcaId = req.user.marca_id;
   const changes = { ...req.body }; delete changes.id; delete changes.created_at;
   if (changes.gatilho) changes.gatilho = JSON.stringify(changes.gatilho);
   if (changes.acao) changes.acao = JSON.stringify(changes.acao);
@@ -1036,21 +1046,29 @@ app.patch("/api/automacoes/:id", requireAuth(async (req, res) => {
   if (!keys.length) return res.status(400).json({ error: "No fields" });
   const sets = keys.map((k, i) => `${k}=$${i + 1}`).join(",");
   const vals = [...Object.values(changes), req.params.id];
-  const rows = await q(`UPDATE automacoes SET ${sets}, updated_at=now() WHERE id = $${vals.length} RETURNING *`, vals);
+  const rows = marcaId
+    ? await q(`UPDATE automacoes SET ${sets}, updated_at=now() WHERE id = $${vals.length} AND marca_id = $${vals.length + 1} RETURNING *`, [...vals, marcaId])
+    : await q(`UPDATE automacoes SET ${sets}, updated_at=now() WHERE id = $${vals.length} RETURNING *`, vals);
   res.json({ data: rows[0] });
 }));
 
 app.delete("/api/automacoes/:id", requireAuth(async (req, res) => {
   if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
-  await q("DELETE FROM automacoes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  marcaId
+    ? await q("DELETE FROM automacoes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("DELETE FROM automacoes WHERE id = $1", [req.params.id]);
   res.json({ deleted: true });
 }));
 
 // Simular execução de automação (dry-run: mostra quantos clientes seriam impactados)
 app.post("/api/automacoes/:id/preview", requireAuth(async (req, res) => {
-  const [auto] = await q("SELECT * FROM automacoes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  const [auto] = marcaId
+    ? await q("SELECT * FROM automacoes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT * FROM automacoes WHERE id = $1", [req.params.id]);
   if (!auto) return res.status(404).json({ error: "Not found" });
-  const marcaId = auto.marca_id;
+  const autoMarcaId = auto.marca_id;
   const gatilho = auto.gatilho;
   let clientes = [];
 
@@ -1058,7 +1076,7 @@ app.post("/api/automacoes/:id/preview", requireAuth(async (req, res) => {
     const dias = gatilho.dias_inativo || 60;
     clientes = await q(
       "SELECT id, nome, email, telefone, recencia_dias, receita_total FROM clientes WHERE marca_id = $1 AND recencia_dias >= $2 AND total_pedidos > 0 ORDER BY receita_total DESC LIMIT 100",
-      [marcaId, dias]
+      [autoMarcaId, dias]
     );
   } else if (auto.tipo === "pos_venda") {
     clientes = await q(
@@ -1066,7 +1084,7 @@ app.post("/api/automacoes/:id/preview", requireAuth(async (req, res) => {
        FROM clientes c JOIN pedidos p ON p.cliente_id = c.id
        WHERE c.marca_id = $1 AND p.status = 'aprovado' AND p.created_at > now() - interval '7 days'
        ORDER BY c.receita_total DESC LIMIT 100`,
-      [marcaId]
+      [autoMarcaId]
     );
   } else if (auto.tipo === "carrinho_abandonado") {
     // Placeholder — depende de webhook do Shopify
@@ -1075,7 +1093,7 @@ app.post("/api/automacoes/:id/preview", requireAuth(async (req, res) => {
     // Custom — pega todos com pedidos
     clientes = await q(
       "SELECT id, nome, email, telefone, recencia_dias, receita_total FROM clientes WHERE marca_id = $1 AND total_pedidos > 0 ORDER BY receita_total DESC LIMIT 100",
-      [marcaId]
+      [autoMarcaId]
     );
   }
 
@@ -1104,6 +1122,12 @@ app.get("/api/automacao-execucoes", requireAuth(async (req, res) => {
 
 // ── Automação Execuções (per automation) ─────────────────────────────────────
 app.get("/api/automacoes/:id/execucoes", requireAuth(async (req, res) => {
+  const marcaId = req.user.marca_id;
+  // Verify automacao belongs to user's marca
+  const [auto] = marcaId
+    ? await q("SELECT id FROM automacoes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT id FROM automacoes WHERE id = $1", [req.params.id]);
+  if (!auto) return res.status(404).json({ error: "Not found" });
   const rows = await q(`
     SELECT ae.*, c.nome as cliente_nome
     FROM automacao_execucoes ae
@@ -1117,7 +1141,10 @@ app.get("/api/automacoes/:id/execucoes", requireAuth(async (req, res) => {
 // ── Duplicar Automação ──────────────────────────────────────────────────────
 app.post("/api/automacoes/:id/duplicate", requireAuth(async (req, res) => {
   if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
-  const [orig] = await q("SELECT * FROM automacoes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  const [orig] = marcaId
+    ? await q("SELECT * FROM automacoes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT * FROM automacoes WHERE id = $1", [req.params.id]);
   if (!orig) return res.status(404).json({ error: "Não encontrada" });
   const [dup] = await q(
     "INSERT INTO automacoes (marca_id, nome, tipo, gatilho, acao, canal, template, ativo) VALUES ($1,$2,$3,$4,$5,$6,$7,false) RETURNING *",
@@ -1136,25 +1163,34 @@ app.get("/api/integracoes", requireAuth(async (req, res) => {
 }));
 
 app.get("/api/integracoes/:id", requireAuth(async (req, res) => {
-  const [row] = await q("SELECT * FROM integracoes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  const [row] = marcaId
+    ? await q("SELECT * FROM integracoes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT * FROM integracoes WHERE id = $1", [req.params.id]);
   if (!row) return res.status(404).json({ error: "Not found" });
   res.json({ data: row });
 }));
 
 app.patch("/api/integracoes/:id", requireAuth(async (req, res) => {
   if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  const marcaId = req.user.marca_id;
   const { config, status } = req.body;
   const sets = []; const vals = [];
   if (config) { sets.push(`config=$${vals.length+1}`); vals.push(JSON.stringify(config)); }
   if (status) { sets.push(`status=$${vals.length+1}`); vals.push(status); }
   sets.push("updated_at=now()");
   vals.push(req.params.id);
-  const rows = await q(`UPDATE integracoes SET ${sets.join(",")} WHERE id=$${vals.length} RETURNING *`, vals);
+  const rows = marcaId
+    ? await q(`UPDATE integracoes SET ${sets.join(",")} WHERE id=$${vals.length} AND marca_id=$${vals.length+1} RETURNING *`, [...vals, marcaId])
+    : await q(`UPDATE integracoes SET ${sets.join(",")} WHERE id=$${vals.length} RETURNING *`, vals);
   res.json({ data: rows[0] });
 }));
 
 app.post("/api/integracoes/:id/test", requireAuth(async (req, res) => {
-  const [integ] = await q("SELECT * FROM integracoes WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  const [integ] = marcaId
+    ? await q("SELECT * FROM integracoes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("SELECT * FROM integracoes WHERE id = $1", [req.params.id]);
   if (!integ) return res.status(404).json({ error: "Not found" });
 
   if (integ.tipo === "shopify") {
@@ -1250,18 +1286,24 @@ app.post("/api/templates", requireAuth(async (req, res) => {
 }));
 
 app.patch("/api/templates/:id", requireAuth(async (req, res) => {
+  const marcaId = req.user.marca_id;
   const changes = { ...req.body }; delete changes.id; delete changes.created_at;
   if (changes.variaveis) changes.variaveis = JSON.stringify(changes.variaveis);
   const keys = Object.keys(changes);
   if (!keys.length) return res.status(400).json({ error: "No fields" });
   const sets = keys.map((k, i) => `${k}=$${i+1}`).join(",");
   const vals = [...Object.values(changes), req.params.id];
-  const rows = await q(`UPDATE templates_mensagem SET ${sets} WHERE id=$${vals.length} RETURNING *`, vals);
+  const rows = marcaId
+    ? await q(`UPDATE templates_mensagem SET ${sets} WHERE id=$${vals.length} AND marca_id=$${vals.length+1} RETURNING *`, [...vals, marcaId])
+    : await q(`UPDATE templates_mensagem SET ${sets} WHERE id=$${vals.length} RETURNING *`, vals);
   res.json({ data: rows[0] });
 }));
 
 app.delete("/api/templates/:id", requireAuth(async (req, res) => {
-  await q("DELETE FROM templates_mensagem WHERE id = $1", [req.params.id]);
+  const marcaId = req.user.marca_id;
+  marcaId
+    ? await q("DELETE FROM templates_mensagem WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+    : await q("DELETE FROM templates_mensagem WHERE id = $1", [req.params.id]);
   res.json({ deleted: true });
 }));
 
@@ -1473,7 +1515,9 @@ app.post("/api/mensagens/enviar", requireAuth(async (req, res) => {
   const marcaId = req.user.marca_id;
 
   // Buscar cliente
-  const [cli] = await q("SELECT * FROM clientes WHERE id = $1", [cliente_id]);
+  const [cli] = marcaId
+    ? await q("SELECT * FROM clientes WHERE id = $1 AND marca_id = $2", [cliente_id, marcaId])
+    : await q("SELECT * FROM clientes WHERE id = $1", [cliente_id]);
   if (!cli) return res.status(404).json({ error: "Cliente não encontrado" });
 
   // Registrar mensagem
@@ -2001,9 +2045,10 @@ app.patch("/api/tags/:id", requireAuth(async (req, res) => {
     if (req.user.role !== "miner" && req.user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
     const { nome, cor } = req.body;
-    const [old] = await q("SELECT * FROM tags WHERE id = $1", [req.params.id]);
+    const [old] = marcaId
+      ? await q("SELECT * FROM tags WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+      : await q("SELECT * FROM tags WHERE id = $1", [req.params.id]);
     if (!old) return res.status(404).json({ error: "Tag não encontrada" });
-    if (marcaId && old.marca_id !== marcaId) return res.status(403).json({ error: "Sem permissão" });
     const sets = []; const vals = []; let idx = 1;
     if (nome !== undefined) { sets.push(`nome = $${idx++}`); vals.push(nome.trim()); }
     if (cor !== undefined) { sets.push(`cor = $${idx++}`); vals.push(cor); }
@@ -2025,12 +2070,15 @@ app.delete("/api/tags/:id", requireAuth(async (req, res) => {
   try {
     if (req.user.role !== "miner" && req.user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
-    const [old] = await q("SELECT * FROM tags WHERE id = $1", [req.params.id]);
+    const [old] = marcaId
+      ? await q("SELECT * FROM tags WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+      : await q("SELECT * FROM tags WHERE id = $1", [req.params.id]);
     if (!old) return res.status(404).json({ error: "Tag não encontrada" });
-    if (marcaId && old.marca_id !== marcaId) return res.status(403).json({ error: "Sem permissão" });
     // Remove tag from all clientes
     await q("UPDATE clientes SET tags = array_remove(tags, $1) WHERE marca_id = $2 AND $1 = ANY(tags)", [old.nome, old.marca_id]);
-    await q("DELETE FROM tags WHERE id = $1", [req.params.id]);
+    marcaId
+      ? await q("DELETE FROM tags WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+      : await q("DELETE FROM tags WHERE id = $1", [req.params.id]);
     res.json({ deleted: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 }));
@@ -2040,9 +2088,10 @@ app.post("/api/clientes/:id/tags", requireAuth(async (req, res) => {
     const { tag } = req.body;
     if (!tag) return res.status(400).json({ error: "tag required" });
     const marcaId = req.user.marca_id;
-    const [cli] = await q("SELECT id, marca_id, tags FROM clientes WHERE id = $1", [req.params.id]);
+    const [cli] = marcaId
+      ? await q("SELECT id, marca_id, tags FROM clientes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+      : await q("SELECT id, marca_id, tags FROM clientes WHERE id = $1", [req.params.id]);
     if (!cli) return res.status(404).json({ error: "Cliente não encontrado" });
-    if (marcaId && cli.marca_id !== marcaId) return res.status(403).json({ error: "Sem permissão" });
     // Auto-create tag in tags table if it doesn't exist
     const cliMarca = cli.marca_id;
     await q("INSERT INTO tags (marca_id, nome) VALUES ($1, $2) ON CONFLICT (marca_id, nome) DO NOTHING", [cliMarca, tag.trim()]);
@@ -2050,7 +2099,9 @@ app.post("/api/clientes/:id/tags", requireAuth(async (req, res) => {
     if (!cli.tags || !cli.tags.includes(tag.trim())) {
       await q("UPDATE clientes SET tags = array_append(COALESCE(tags, '{}'), $1) WHERE id = $2", [tag.trim(), req.params.id]);
     }
-    const [updated] = await q("SELECT * FROM clientes WHERE id = $1", [req.params.id]);
+    const [updated] = marcaId
+      ? await q("SELECT * FROM clientes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+      : await q("SELECT * FROM clientes WHERE id = $1", [req.params.id]);
     res.json({ data: updated });
   } catch (e) { res.status(500).json({ error: e.message }); }
 }));
@@ -2059,11 +2110,14 @@ app.delete("/api/clientes/:id/tags/:tag", requireAuth(async (req, res) => {
   try {
     const tag = decodeURIComponent(req.params.tag);
     const marcaId = req.user.marca_id;
-    const [cli] = await q("SELECT id, marca_id FROM clientes WHERE id = $1", [req.params.id]);
+    const [cli] = marcaId
+      ? await q("SELECT id, marca_id FROM clientes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+      : await q("SELECT id, marca_id FROM clientes WHERE id = $1", [req.params.id]);
     if (!cli) return res.status(404).json({ error: "Cliente não encontrado" });
-    if (marcaId && cli.marca_id !== marcaId) return res.status(403).json({ error: "Sem permissão" });
     await q("UPDATE clientes SET tags = array_remove(tags, $1) WHERE id = $2", [tag, req.params.id]);
-    const [updated] = await q("SELECT * FROM clientes WHERE id = $1", [req.params.id]);
+    const [updated] = marcaId
+      ? await q("SELECT * FROM clientes WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId])
+      : await q("SELECT * FROM clientes WHERE id = $1", [req.params.id]);
     res.json({ data: updated });
   } catch (e) { res.status(500).json({ error: e.message }); }
 }));

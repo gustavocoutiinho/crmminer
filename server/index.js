@@ -2059,5 +2059,9 @@ app.get("/{*splat}", (req, res) => {
   }
 });
 
-// ── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, "0.0.0.0", () => console.log(`🚀 CRM Miner API v5 on port ${PORT}`));
+// ── Start (only when run directly, not when imported) ────────────────────────
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, "0.0.0.0", () => console.log(`🚀 CRM Miner API v5 on port ${PORT}`));
+}
+
+export default app;

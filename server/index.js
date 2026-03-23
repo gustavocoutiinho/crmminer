@@ -1153,6 +1153,188 @@ app.post("/api/automacoes/:id/duplicate", requireAuth(async (req, res) => {
   res.json({ data: dup });
 }));
 
+// ── Conexão Self-Service (admin conecta sozinho, sem dev) ────────────────────
+app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  const marcaId = req.user.marca_id;
+  if (!marcaId) return res.status(400).json({ error: "marca_id required" });
+  const { tipo, config } = req.body;
+  if (!tipo || !config) return res.status(400).json({ error: "tipo e config obrigatórios" });
+
+  // Testar conexão antes de salvar
+  try {
+    if (tipo === "shopify") {
+      const { store, token } = config;
+      if (!store || !token) return res.status(400).json({ error: "URL da loja e token são obrigatórios" });
+      const shopUrl = store.replace("https://","").replace("http://","").replace(/\/$/,"");
+      const r = await fetch(`https://${shopUrl}/admin/api/2024-01/shop.json`, { headers: { "X-Shopify-Access-Token": token } });
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        return res.json({ ok: false, error: `Shopify retornou erro ${r.status}. Verifique o token e a URL da loja.` });
+      }
+      const { shop } = await r.json();
+      // Salvar ou atualizar integração
+      const [existing] = await q("SELECT id FROM integracoes WHERE marca_id=$1 AND tipo='shopify'", [marcaId]);
+      if (existing) {
+        await q("UPDATE integracoes SET config=$1, status='conectado', nome=$2, ultimo_sync=now() WHERE id=$3",
+          [JSON.stringify({ store: shopUrl, token, shop_name: shop.name }), `Shopify — ${shop.name}`, existing.id]);
+      } else {
+        await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'shopify',$2,$3,'conectado')",
+          [marcaId, `Shopify — ${shop.name}`, JSON.stringify({ store: shopUrl, token, shop_name: shop.name })]);
+      }
+      return res.json({ ok: true, message: `Conectado com sucesso à loja "${shop.name}"!`, shop: { name: shop.name, domain: shop.domain } });
+    }
+
+    if (tipo === "bling") {
+      const { api_key } = config;
+      if (!api_key) return res.status(400).json({ error: "API Key do Bling é obrigatória" });
+      const r = await fetch("https://bling.com.br/Api/v2/produtos/json/", { headers: { Authorization: `Bearer ${api_key}` } });
+      if (!r.ok) return res.json({ ok: false, error: `Bling retornou erro ${r.status}. Verifique a API Key.` });
+      const [existing] = await q("SELECT id FROM integracoes WHERE marca_id=$1 AND tipo='bling'", [marcaId]);
+      if (existing) {
+        await q("UPDATE integracoes SET config=$1, status='conectado', ultimo_sync=now() WHERE id=$2",
+          [JSON.stringify({ api_key }), existing.id]);
+      } else {
+        await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'bling','Bling ERP',$2,'conectado')",
+          [marcaId, JSON.stringify({ api_key })]);
+      }
+      return res.json({ ok: true, message: "Conectado ao Bling com sucesso!" });
+    }
+
+    if (tipo === "olist") {
+      const { seller_id, api_key } = config;
+      if (!seller_id || !api_key) return res.status(400).json({ error: "Seller ID e API Key obrigatórios" });
+      const [existing] = await q("SELECT id FROM integracoes WHERE marca_id=$1 AND tipo='olist'", [marcaId]);
+      if (existing) {
+        await q("UPDATE integracoes SET config=$1, status='conectado', ultimo_sync=now() WHERE id=$2",
+          [JSON.stringify({ seller_id, api_key }), existing.id]);
+      } else {
+        await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'olist','Olist',$2,'conectado')",
+          [marcaId, JSON.stringify({ seller_id, api_key })]);
+      }
+      return res.json({ ok: true, message: "Conectado ao Olist!" });
+    }
+
+    if (tipo === "pagarme") {
+      const { api_key } = config;
+      if (!api_key) return res.status(400).json({ error: "API Key do Pagar.me obrigatória" });
+      const [existing] = await q("SELECT id FROM integracoes WHERE marca_id=$1 AND tipo='pagarme'", [marcaId]);
+      if (existing) {
+        await q("UPDATE integracoes SET config=$1, status='conectado', ultimo_sync=now() WHERE id=$2",
+          [JSON.stringify({ api_key }), existing.id]);
+      } else {
+        await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'pagarme','Pagar.me',$2,'conectado')",
+          [marcaId, JSON.stringify({ api_key })]);
+      }
+      return res.json({ ok: true, message: "Conectado ao Pagar.me!" });
+    }
+
+    if (tipo === "suri") {
+      const { api_url, token } = config;
+      if (!api_url || !token) return res.status(400).json({ error: "URL e token obrigatórios" });
+      const [existing] = await q("SELECT id FROM integracoes WHERE marca_id=$1 AND tipo='suri'", [marcaId]);
+      if (existing) {
+        await q("UPDATE integracoes SET config=$1, status='conectado', ultimo_sync=now() WHERE id=$2",
+          [JSON.stringify({ api_url, token }), existing.id]);
+      } else {
+        await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'suri','Suri',$2,'conectado')",
+          [marcaId, JSON.stringify({ api_url, token })]);
+      }
+      return res.json({ ok: true, message: "Conectado à Suri!" });
+    }
+
+    return res.status(400).json({ error: `Tipo "${tipo}" não suportado. Use: shopify, bling, olist, pagarme, suri` });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+}));
+
+// ── Sync genérico (usa token da integração, não env var) ─────────────────────
+app.post("/api/integracoes/:id/sync", requireAuth(async (req, res) => {
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  const marcaId = req.user.marca_id;
+  const [integ] = marcaId
+    ? await q("SELECT * FROM integracoes WHERE id=$1 AND marca_id=$2", [req.params.id, marcaId])
+    : await q("SELECT * FROM integracoes WHERE id=$1", [req.params.id]);
+  if (!integ) return res.status(404).json({ error: "Integração não encontrada" });
+  if (!integ.config) return res.status(400).json({ error: "Integração sem configuração" });
+
+  const cfg = typeof integ.config === "string" ? JSON.parse(integ.config) : integ.config;
+  const mId = integ.marca_id;
+  const startTime = Date.now();
+  const TIMEOUT_LIMIT = 240000;
+
+  if (integ.tipo === "shopify") {
+    const store = cfg.store || process.env.SHOPIFY_PRLS_STORE || process.env.SHOPIFY_STORE;
+    const token = cfg.token || process.env.SHOPIFY_PRLS_TOKEN || process.env.SHOPIFY_ACCESS_TOKEN;
+    if (!store || !token) return res.status(400).json({ error: "Store e token não configurados" });
+
+    try {
+      const shopFetch = async (ep) => {
+        const r = await fetch(`https://${store}${ep}`, { headers: { "X-Shopify-Access-Token": token } });
+        if (!r.ok) throw new Error(`Shopify ${r.status}`);
+        return r.json();
+      };
+      let cN=0,cU=0,pN=0,pU=0,erros=0;
+      // Customers
+      let sinceId = 0;
+      for (let pg = 0; pg < 5; pg++) {
+        if (Date.now() - startTime > TIMEOUT_LIMIT) break;
+        const data = await shopFetch(`/admin/api/2024-01/customers.json?limit=250&since_id=${sinceId}`);
+        const custs = data.customers || [];
+        if (!custs.length) break;
+        for (const c of custs) {
+          try {
+            if (!c.orders_count) continue;
+            const nome = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email?.split("@")[0] || "Sem nome";
+            const recDias = c.last_order_date ? Math.floor((Date.now() - new Date(c.last_order_date)) / 86400000) : 999;
+            const r = await q(`INSERT INTO clientes (marca_id,shopify_id,nome,email,telefone,recencia_dias,total_pedidos,receita_total,created_at)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (marca_id,shopify_id) WHERE shopify_id IS NOT NULL DO UPDATE SET
+              nome=EXCLUDED.nome,email=EXCLUDED.email,telefone=EXCLUDED.telefone,recencia_dias=EXCLUDED.recencia_dias,
+              total_pedidos=EXCLUDED.total_pedidos,receita_total=EXCLUDED.receita_total,updated_at=now() RETURNING (xmax=0) AS is_new`,
+              [mId,c.id,nome,c.email,c.phone,recDias,c.orders_count||0,parseFloat(c.total_spent)||0,c.created_at]);
+            if (r[0]?.is_new) cN++; else cU++;
+          } catch(e) { erros++; }
+        }
+        sinceId = custs[custs.length-1].id;
+        if (custs.length < 250) break;
+      }
+      // Orders
+      sinceId = 0;
+      for (let pg = 0; pg < 5; pg++) {
+        if (Date.now() - startTime > TIMEOUT_LIMIT) break;
+        const data = await shopFetch(`/admin/api/2024-01/orders.json?limit=250&status=any&since_id=${sinceId}`);
+        const ords = data.orders || [];
+        if (!ords.length) break;
+        for (const o of ords) {
+          try {
+            let cliId = null;
+            if (o.customer?.id) {
+              const rs = await q("SELECT id FROM clientes WHERE shopify_id=$1 AND marca_id=$2 LIMIT 1", [o.customer.id, mId]);
+              cliId = rs[0]?.id || null;
+            }
+            const st = o.financial_status === "paid" ? "aprovado" : o.cancelled_at ? "cancelado" : "pendente";
+            const r = await q(`INSERT INTO pedidos (marca_id,shopify_id,cliente_id,valor,status,origem,created_at)
+              VALUES ($1,$2,$3,$4,$5,'shopify',$6) ON CONFLICT (marca_id,shopify_id) WHERE shopify_id IS NOT NULL DO UPDATE SET
+              cliente_id=EXCLUDED.cliente_id,valor=EXCLUDED.valor,status=EXCLUDED.status,updated_at=now() RETURNING (xmax=0) AS is_new`,
+              [mId,o.id,cliId,parseFloat(o.total_price)||0,st,o.created_at]);
+            if (r[0]?.is_new) pN++; else pU++;
+          } catch(e) { erros++; }
+        }
+        sinceId = ords[ords.length-1].id;
+        if (ords.length < 250) break;
+      }
+      await q("UPDATE integracoes SET ultimo_sync=now(), status='conectado' WHERE id=$1", [integ.id]);
+      return res.json({ ok: true, clientes_novos: cN, clientes_atualizados: cU, pedidos_novos: pN, pedidos_atualizados: pU, erros, duracao_ms: Date.now()-startTime });
+    } catch (e) {
+      await q("UPDATE integracoes SET status='erro' WHERE id=$1", [integ.id]);
+      return res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+
+  return res.status(400).json({ error: `Sync para tipo "${integ.tipo}" ainda não implementado` });
+}));
+
 // ── Integrações ──────────────────────────────────────────────────────────────
 app.get("/api/integracoes", requireAuth(async (req, res) => {
   const marcaId = req.user.marca_id;

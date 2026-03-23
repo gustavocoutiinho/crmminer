@@ -3,14 +3,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/auth/login", "destination": "/api/auth?action=login" },
-    { "source": "/api/auth/logout", "destination": "/api/auth?action=logout" },
-    { "source": "/api/auth/me", "destination": "/api/auth?action=me" },
-    { "source": "/api/auth/register", "destination": "/api/auth?action=register" },
-    { "source": "/api/auth/google", "destination": "/api/auth?action=google" },
-    { "source": "/api/auth/profile", "destination": "/api/auth?action=profile" },
-    { "source": "/api/auth/change-password", "destination": "/api/auth?action=change-password" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/api/(.*)", "destination": "/api/server" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [

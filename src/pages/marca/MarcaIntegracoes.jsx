@@ -97,7 +97,7 @@ function MarcaIntegracoes({ user }) {
     erro: { label: "Erro", c: "#ff3b30", bg: "#ffe5e3" },
   };
 
-  const ICON_MAP = { shopify: "🛍", whatsapp: "💬", suri: "🤖", google_ads: "📢", meta_ads: "📘", erp: "📦", mailchimp: "✉️", email: "✉️", sms: "📱" };
+  const ICON_MAP = { shopify: "🛍", whatsapp: "💬", suri: "🤖", google_ads: "📢", meta_ads: "📘", erp: "📦", mailchimp: "✉️", email: "✉️", sms: "📱", olist: "📦", pagarme: "💳" };
   const getIcon = (tipo) => ICON_MAP[tipo] || "🔗";
 
   /* ── Test connection ── */
@@ -526,6 +526,9 @@ function MarcaIntegracoes({ user }) {
                 const st = ST_CONN[c.status] || ST_CONN.desconectado;
                 const tr = testResult[c.id];
                 const isShopify = c.tipo === "shopify";
+                const isOlist = c.tipo === "olist";
+                const isPagarme = c.tipo === "pagarme";
+                const hasSyncBtn = isShopify || isOlist || isPagarme;
                 return (
                   <div key={c.id} className="ap-card" style={{ padding: 22, border: `1.5px solid ${st.c}22` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
@@ -537,6 +540,12 @@ function MarcaIntegracoes({ user }) {
                     {isShopify && c.config?.store && (
                       <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>🏪 {c.config.store}</div>
                     )}
+                    {isOlist && c.config?.seller_id && (
+                      <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>📦 Seller: {c.config.seller_id}</div>
+                    )}
+                    {isPagarme && c.config?.secret_key && (
+                      <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>💳 Key: {c.config.secret_key.substring(0, 12)}...</div>
+                    )}
                     {(c.status === "conectado" || c.status === "ativo") && c.ultimo_sync && (
                       <div style={{ fontSize: 11, color: T.sub, background: "rgba(0,0,0,0.03)", borderRadius: 8, padding: "6px 10px", marginBottom: 12 }}>Último sync: {new Date(c.ultimo_sync).toLocaleString("pt-BR")}</div>
                     )}
@@ -547,7 +556,7 @@ function MarcaIntegracoes({ user }) {
                       </div>
                     )}
                     {/* Sync result inline */}
-                    {isShopify && syncResult && !syncing && (
+                    {hasSyncBtn && syncResult && !syncing && (
                       <div style={{ fontSize: 11, background: syncResult.status === "success" ? "#e9fbed" : syncResult.status === "partial" ? "#fff3e0" : "#ffe5e3", color: syncResult.status === "success" ? "#1a7f2b" : syncResult.status === "partial" ? "#b45309" : "#cc2936", borderRadius: 8, padding: "8px 10px", marginBottom: 12, lineHeight: 1.5 }}>
                         {syncResult.status === "success" && "✓ "}
                         {syncResult.status === "partial" && "⚠ "}
@@ -559,12 +568,21 @@ function MarcaIntegracoes({ user }) {
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 8 }}>
-                      {isShopify && (
+                      {hasSyncBtn && (
                         <button
                           className="ap-btn ap-btn-sm"
-                          style={{ flex: 1, background: syncing ? "#b8d98a" : "#96bf48", color: "#fff", border: "none", position: "relative", overflow: "hidden" }}
+                          style={{ flex: 1, background: syncing ? "#b8d98a" : isOlist ? "#e67e22" : isPagarme ? "#2ecc71" : "#96bf48", color: "#fff", border: "none", position: "relative", overflow: "hidden" }}
                           disabled={syncing}
-                          onClick={handleShopifySync}
+                          onClick={() => {
+                            if (isShopify) handleShopifySync();
+                            else if (isOlist || isPagarme) {
+                              setSyncing(true); setSyncResult(null);
+                              apiFetch(`/api/sync/${c.tipo}`, { method: "POST", body: JSON.stringify({ marca_id: c.marca_id }) })
+                                .then(d => { setSyncResult({ status: "success", ...d }); loadConexoes(); })
+                                .catch(e => setSyncResult({ status: "error", error: e.message }))
+                                .finally(() => setSyncing(false));
+                            }
+                          }}
                         >
                           {syncing ? (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -576,8 +594,8 @@ function MarcaIntegracoes({ user }) {
                           ) : "🔄 Sincronizar Agora"}
                         </button>
                       )}
-                      <button className="ap-btn ap-btn-secondary ap-btn-sm" style={{ flex: isShopify ? 0 : 1 }} disabled={testingId === c.id} onClick={() => handleTest(c.id)}>{testingId === c.id ? "Testando..." : "Testar"}</button>
-                      <button className={`ap-btn ap-btn-sm ${c.status === "conectado" || c.status === "ativo" ? "ap-btn-secondary" : "ap-btn-primary"}`} style={{ flex: isShopify ? 0 : 1 }} onClick={() => setDetailConn(c)}>Configurar</button>
+                      <button className="ap-btn ap-btn-secondary ap-btn-sm" style={{ flex: hasSyncBtn ? 0 : 1 }} disabled={testingId === c.id} onClick={() => handleTest(c.id)}>{testingId === c.id ? "Testando..." : "Testar"}</button>
+                      <button className={`ap-btn ap-btn-sm ${c.status === "conectado" || c.status === "ativo" ? "ap-btn-secondary" : "ap-btn-primary"}`} style={{ flex: hasSyncBtn ? 0 : 1 }} onClick={() => setDetailConn(c)}>Configurar</button>
                     </div>
                   </div>
                 );

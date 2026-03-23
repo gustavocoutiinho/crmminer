@@ -891,6 +891,92 @@ app.post("/api/webhook/:source", async (req, res) => {
       return res.json({ ok: true, action: "ignored", topic });
     }
 
+    // ── Olist Webhook ──
+    if (source === "olist") {
+      const mId = marca_id;
+      if (!mId) return res.status(400).json({ error: "marca_id required" });
+      const event = req.body;
+      const topic = event.topic || event.event_type || "unknown";
+
+      if (topic.includes("order") || event.order) {
+        const order = event.order || event.resource || event;
+        const custName = order.customer?.name || order.buyer?.name || "Cliente Olist";
+        const custEmail = order.customer?.email || order.buyer?.email || null;
+        const custPhone = order.customer?.phone || order.buyer?.phone || null;
+        const valor = parseFloat(order.total_amount || order.total || 0);
+        const orderId = String(order.id || order.order_id || "");
+
+        if (custEmail) {
+          const [existing] = await q("SELECT id FROM clientes WHERE marca_id=$1 AND email=$2 LIMIT 1", [mId, custEmail]);
+          let clienteId;
+          if (existing) {
+            clienteId = existing.id;
+            await q("UPDATE clientes SET total_pedidos=total_pedidos+1, receita_total=receita_total+$1, recencia_dias=0, updated_at=now() WHERE id=$2", [valor, clienteId]);
+          } else {
+            const [novo] = await q("INSERT INTO clientes (marca_id, nome, email, telefone, total_pedidos, receita_total) VALUES ($1,$2,$3,$4,1,$5) RETURNING id",
+              [mId, custName, custEmail, custPhone, valor]);
+            clienteId = novo.id;
+          }
+
+          if (orderId) {
+            await q("INSERT INTO pedidos (marca_id, cliente_id, valor, status, origem, external_id, created_at) VALUES ($1,$2,$3,$4,'olist',$5,now()) ON CONFLICT DO NOTHING",
+              [mId, clienteId, valor, "aprovado", orderId]);
+            await q("INSERT INTO timeline (marca_id, cliente_id, tipo, titulo, metadata) VALUES ($1,$2,'pedido',$3,$4)",
+              [mId, clienteId, `Pedido Olist #${orderId} - R$ ${valor.toFixed(2)}`, JSON.stringify({ olist_order_id: orderId, valor })]);
+          }
+        }
+        return res.json({ ok: true, action: "olist_order_processed" });
+      }
+      return res.json({ ok: true, action: "olist_event_logged", topic });
+    }
+
+    // ── Pagar.me Webhook ──
+    if (source === "pagarme") {
+      const mId = marca_id;
+      if (!mId) return res.status(400).json({ error: "marca_id required" });
+      const event = req.body;
+      const eventType = event.type || "unknown";
+
+      if (eventType.includes("order") || eventType.includes("charge") || event.data?.order) {
+        const order = event.data?.order || event.data || event;
+        const cust = order.customer || {};
+        const custName = cust.name || "Cliente Pagar.me";
+        const custEmail = cust.email || null;
+        const custPhone = cust.phones?.mobile_phone ? `${cust.phones.mobile_phone.area_code}${cust.phones.mobile_phone.number}` : null;
+        const valor = (order.amount || 0) / 100;
+        const orderId = order.id || order.code || "";
+        const statusMap = { paid: "aprovado", pending: "pendente", canceled: "cancelado", failed: "cancelado" };
+
+        if (custEmail) {
+          const [existing] = await q("SELECT id FROM clientes WHERE marca_id=$1 AND email=$2 LIMIT 1", [mId, custEmail]);
+          let clienteId;
+          if (existing) {
+            clienteId = existing.id;
+            await q("UPDATE clientes SET total_pedidos=total_pedidos+1, receita_total=receita_total+$1, recencia_dias=0, updated_at=now() WHERE id=$2", [valor, clienteId]);
+          } else {
+            const [novo] = await q("INSERT INTO clientes (marca_id, nome, email, telefone, total_pedidos, receita_total) VALUES ($1,$2,$3,$4,1,$5) RETURNING id",
+              [mId, custName, custEmail, custPhone, valor]);
+            clienteId = novo.id;
+          }
+
+          if (orderId) {
+            const [existPedido] = await q("SELECT id FROM pedidos WHERE marca_id=$1 AND external_id=$2 LIMIT 1", [mId, orderId]);
+            if (!existPedido) {
+              await q("INSERT INTO pedidos (marca_id, cliente_id, valor, status, origem, external_id, created_at) VALUES ($1,$2,$3,$4,'pagarme',$5,now())",
+                [mId, clienteId, valor, statusMap[order.status] || "pendente", orderId]);
+            } else {
+              await q("UPDATE pedidos SET status=$1, updated_at=now() WHERE marca_id=$2 AND external_id=$3",
+                [statusMap[order.status] || "pendente", mId, orderId]);
+            }
+            await q("INSERT INTO timeline (marca_id, cliente_id, tipo, titulo, metadata) VALUES ($1,$2,'pedido',$3,$4)",
+              [mId, clienteId, `Pagamento Pagar.me #${orderId} - R$ ${valor.toFixed(2)}`, JSON.stringify({ pagarme_order_id: orderId, valor, status: order.status })]);
+          }
+        }
+        return res.json({ ok: true, action: "pagarme_order_processed" });
+      }
+      return res.json({ ok: true, action: "pagarme_event_logged", eventType });
+    }
+
     // Generic webhook log
     console.log(`[Webhook] source=${source}`, JSON.stringify(req.body).slice(0, 300));
     return res.json({ ok: true, action: "logged" });

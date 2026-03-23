@@ -409,9 +409,9 @@ app.post("/api/sync/shopify", requireAuth(async (req, res) => {
   if (req.user.role !== "miner" && req.user.role !== "admin") {
     return res.status(403).json({ error: "Sem permissão" });
   }
-  const SHOPIFY_STORE = process.env.SHOPIFY_STORE || "prlsteste.myshopify.com";
-  const SHOPIFY_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN || "";
-  if (!SHOPIFY_TOKEN) return res.status(400).json({ error: "SHOPIFY_ACCESS_TOKEN not configured" });
+  const SHOPIFY_STORE = process.env.SHOPIFY_PRLS_STORE || process.env.SHOPIFY_STORE || "prlsteste.myshopify.com";
+  const SHOPIFY_TOKEN = process.env.SHOPIFY_PRLS_TOKEN || process.env.SHOPIFY_ACCESS_TOKEN || "";
+  if (!SHOPIFY_TOKEN) return res.status(400).json({ error: "Shopify token não configurado" });
 
   const marcaId = req.user.marca_id || req.body.marca_id;
   if (!marcaId) return res.status(400).json({ error: "marca_id required" });
@@ -434,9 +434,12 @@ app.post("/api/sync/shopify", requireAuth(async (req, res) => {
     let clientesNovos = 0, clientesAtualizados = 0, pedidosNovos = 0, pedidosAtualizados = 0, erros = 0;
     const errorDetails = [];
 
-    // Sync customers (all pages)
+    // Sync customers (max 5 pages = 1250 clientes por sync pra evitar timeout)
+    const MAX_PAGES = 5;
+    const TIMEOUT_LIMIT = 240000; // 240s safety margin
     let sinceId = 0;
-    for (let page = 0; page < 30; page++) {
+    for (let page = 0; page < MAX_PAGES; page++) {
+      if (Date.now() - startTime > TIMEOUT_LIMIT) break;
       try {
         const data = await shopFetch(`/admin/api/2024-01/customers.json?limit=250&since_id=${sinceId}`);
         const customers = data.customers || [];
@@ -469,9 +472,10 @@ app.post("/api/sync/shopify", requireAuth(async (req, res) => {
       }
     }
 
-    // Sync orders (all pages)
+    // Sync orders (max 5 pages = 1250 pedidos por sync)
     sinceId = 0;
-    for (let page = 0; page < 30; page++) {
+    for (let page = 0; page < MAX_PAGES; page++) {
+      if (Date.now() - startTime > TIMEOUT_LIMIT) break;
       try {
         const data = await shopFetch(`/admin/api/2024-01/orders.json?limit=250&status=any&since_id=${sinceId}`);
         const orders = data.orders || [];
@@ -493,7 +497,7 @@ app.post("/api/sync/shopify", requireAuth(async (req, res) => {
             if (o.line_items && result[0]?.id) {
               for (const item of o.line_items) {
                 await q(`INSERT INTO pedido_itens (pedido_id, produto_nome, produto_id, variante, quantidade, preco)
-                  VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
+                  VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (pedido_id, produto_id, variante) WHERE produto_id IS NOT NULL DO NOTHING`,
                   [result[0].id, item.title, item.product_id, item.variant_title, item.quantity, parseFloat(item.price) || 0]);
               }
             }
@@ -866,7 +870,7 @@ app.post("/api/webhook/:source", async (req, res) => {
             if (order.line_items && pedidoRow[0]?.id) {
               for (const item of order.line_items) {
                 await q(`INSERT INTO pedido_itens (pedido_id, produto_nome, produto_id, variante, quantidade, preco)
-                  VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
+                  VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (pedido_id, produto_id, variante) WHERE produto_id IS NOT NULL DO NOTHING`,
                   [pedidoRow[0].id, item.title, item.product_id, item.variant_title, item.quantity, parseFloat(item.price) || 0]);
               }
             }
@@ -1279,7 +1283,7 @@ app.post("/api/suri/webhook", async (req, res) => {
       if (c?.phone) {
         const marcaId = "a0000000-0000-0000-0000-000000000001"; // TODO: dynamic
         await q(`INSERT INTO clientes (marca_id, nome, telefone, suri_contact_id, canal_preferido) 
-          VALUES ($1,$2,$3,$4,'whatsapp') ON CONFLICT DO NOTHING`,
+          VALUES ($1,$2,$3,$4,'whatsapp') ON CONFLICT (pedido_id, produto_id, variante) WHERE produto_id IS NOT NULL DO NOTHING`,
           [marcaId, c.name || c.phone, c.phone, c.id || c.uuid]);
       }
     }

@@ -3,7 +3,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import { T, PLANO_CFG, RFM_CFG } from "../../lib/theme";
 import { Avatar, Chip, KpiCard, SectionHeader, ApTooltip } from "../../components/UI";
 import { fetchOwnerStats } from "../../lib/api";
-import { DB_FALLBACK } from "../../data/fallback";
 import { computeMRR, PLANOS } from "../../utils/helpers";
 
 function OwnerDashboard({ marcas }) {
@@ -28,7 +27,7 @@ function OwnerDashboard({ marcas }) {
   const marcaStats = ownerData ? ownerData.marcas : [];
   const mensalData = ownerData && ownerData.mensal.length > 0
     ? ownerData.mensal.map((m) => ({ m: m.mes, v: m.receita }))
-    : DB_FALLBACK.mrrHist;
+    : [];
   const rfmData = ownerData ? ownerData.rfm : {};
 
   const RFM_COLORS = ["#4545F5", "#8e44ef", "#28cd41", "#ff9500", "#ff3b30", "#5ac8fa", "#af52de"];

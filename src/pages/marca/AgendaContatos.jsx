@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, Chip, SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 import AgendarContatoModal from "./AgendarContatoModal";
 
 const TIPO_ICON = { whatsapp: "💬", ligacao: "📞", email: "📧" };
@@ -17,7 +16,7 @@ const FILTROS = [
 function AgendaContatos({ user }) {
   const marcaId = user?.marca_id || user?.marcaId || "demo";
   const [agendados, setAgendados] = useState(() =>
-    (DB_FALLBACK.contatos_agendados || []).filter(a => a.marca_id === marcaId)
+    [].filter(a => a.marca_id === marcaId)
   );
   const [filtro, setFiltro] = useState("mes");
   const [selectedDay, setSelectedDay] = useState(null);
@@ -32,7 +31,7 @@ function AgendaContatos({ user }) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
 
-  const clientes = DB_FALLBACK.clientes.filter(c => c.marca_id === marcaId);
+  const clientes = [];
   const clienteMap = {};
   clientes.forEach(c => { clienteMap[c.id] = c; });
 

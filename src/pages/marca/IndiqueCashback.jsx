@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function IndiqueCashback({ user }) {
   const toast = useToast();
@@ -10,8 +9,8 @@ function IndiqueCashback({ user }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("todas");
 
-  const indicacoes = useMemo(() => DB_FALLBACK.indicacoes || [], []);
-  const clientes = useMemo(() => DB_FALLBACK.clientes.filter((c) => c.marca_id === marcaId), [marcaId]);
+  const indicacoes = useMemo(() => [], []);
+  const clientes = useMemo(() => [], [marcaId]);
 
   const totalIndicacoes = indicacoes.length;
   const convertidas = indicacoes.filter((i) => i.status === "convertida").length;

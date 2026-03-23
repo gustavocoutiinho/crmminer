@@ -3,7 +3,6 @@ import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { T, ROLE_CFG } from "../../lib/theme";
 import { Avatar, Chip, SectionHeader, Modal, Lbl, ProgressBar } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 const STATUS_CFG = {
   ativo: { label: "Ativo", c: "#28cd41", bg: "#e9fbed", icon: "🟢" },
@@ -16,14 +15,14 @@ const STATUS_CFG = {
 function GestaoVendedores({ user }) {
   const marcaId = user?.marca_id || user?.marcaId || "demo";
   const [usuarios, setUsuarios] = useState(
-    DB_FALLBACK.usuarios.filter(u => u.marca_id === marcaId && (u.role === "vendedor" || u.role === "gerente"))
+    []
   );
   const [editUser, setEditUser] = useState(null);
   const [showAusencia, setShowAusencia] = useState(null);
   const toast = useToast();
 
-  const clientes = DB_FALLBACK.clientes.filter(c => c.marca_id === marcaId);
-  const metas = DB_FALLBACK.metas.filter(m => m.marca_id === marcaId);
+  const clientes = [];
+  const metas = [];
 
   const getVendedorStats = (vendedor) => {
     const clis = clientes.filter(c => c.vendedor_id === vendedor.id);

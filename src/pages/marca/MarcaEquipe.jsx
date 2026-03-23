@@ -4,12 +4,11 @@ import { Avatar, Chip, Modal, FormRow, Lbl, KpiCard, SectionHeader } from "../..
 import { useToast } from "../../context/ToastContext";
 import { useSupabaseQuery } from "../../lib/hooks";
 import { createUser } from "../../lib/api";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function MarcaEquipe({ isAdmin, user }) {
   const marcaId = user?.marca_id || user?.marcaId;
   const { data: sbUsuarios, loading: loadingUsers, refetch: refetchUsers } = useSupabaseQuery("users", marcaId ? { eq: { marca_id: marcaId } } : {});
-  const [localUsuarios, setLocalUsuarios] = useState(DB_FALLBACK.usuarios);
+  const [localUsuarios, setLocalUsuarios] = useState([]);
 
   const usuarios = sbUsuarios && sbUsuarios.length > 0 ? sbUsuarios : localUsuarios;
   const setUsuarios = sbUsuarios && sbUsuarios.length > 0 ? () => {} : setLocalUsuarios;

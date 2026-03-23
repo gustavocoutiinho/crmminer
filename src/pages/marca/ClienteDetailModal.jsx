@@ -6,7 +6,6 @@ import { RFM_CFG } from "../../lib/theme";
 import { timelineRelative, timelineDateGroup } from "../../utils/helpers";
 import FidelidadeCliente from "./FidelidadeCliente";
 import RegistroInteracao from "./RegistroInteracao";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function ClienteTagsEditor({ clienteId, currentTags, onUpdate }) {
   const [allTags, setAllTags] = useState([]);
@@ -193,7 +192,7 @@ function ClienteDetailModal({ clienteId, user, onClose }) {
   const [notasSaved, setNotasSaved] = useState(false);
   const [showRegistro, setShowRegistro] = useState(false);
   const [registros, setRegistros] = useState(() =>
-    (DB_FALLBACK.registros_interacao || []).filter(r => r.cliente_id === clienteId)
+    [].filter(r => r.cliente_id === clienteId)
   );
 
   const [showAgendaForm, setShowAgendaForm] = useState(false);
@@ -365,7 +364,7 @@ function ClienteDetailModal({ clienteId, user, onClose }) {
               {registros.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(reg => {
                 const tipoCfg = { observacao: { icon: "📝", c: "#4545F5" }, feedback: { icon: "💬", c: "#28cd41" }, info: { icon: "ℹ️", c: "#8e44ef" }, objecao: { icon: "🚫", c: "#ff3b30" }, preferencia: { icon: "❤️", c: "#ff9500" } };
                 const cfg = tipoCfg[reg.tipo] || tipoCfg.observacao;
-                const vendedor = DB_FALLBACK.usuarios.find(u => u.id === reg.vendedor_id);
+                const vendedor = null;
                 return (
                   <div key={reg.id} style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${cfg.c}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>

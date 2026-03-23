@@ -2,19 +2,16 @@ import React, { useMemo, useState } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function GestaoQRCodes({ user }) {
   const toast = useToast();
   const marcaId = user.marca_id || user.marcaId || "demo";
 
   const vendedores = useMemo(() => {
-    return DB_FALLBACK.usuarios.filter(u =>
-      u.role === "vendedor" && u.marca_id === marcaId
-    );
+    return [];
   }, [marcaId]);
 
-  const marca = DB_FALLBACK.marcas.find(m => m.id === marcaId);
+  const marca = null;
   const marcaDomain = marca?.email?.split("@")[1] || "minerbz.com.br";
 
   const totais = useMemo(() => {

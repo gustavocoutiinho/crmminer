@@ -2,15 +2,14 @@ import React, { useRef, useState, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function MeuQRCode({ user }) {
   const toast = useToast();
   const canvasRef = useRef(null);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  const vendedor = DB_FALLBACK.usuarios.find(u => u.id === user.id) || user;
-  const marca = DB_FALLBACK.marcas.find(m => m.id === (user.marca_id || user.marcaId || "demo"));
+  const vendedor = user;
+  const marca = null;
   const codigo = vendedor.codigo_vendedor || `${(marca?.nome || "MARCA").replace(/\s/g, "").substring(0, 4).toUpperCase()}-${user.nome.split(" ")[0].toUpperCase()}-001`;
   const marcaDomain = marca?.email?.split("@")[1] || "minerbz.com.br";
   const link = `https://${marcaDomain}/?ref=${codigo}`;

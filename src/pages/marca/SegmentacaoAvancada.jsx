@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { fetchData } from "../../lib/api";
-import { DB_FALLBACK } from "../../data/fallback";
 
 const FILTER_DEF = [
   { key: "segmento_rfm", label: "Segmento RFM", type: "select", options: ["champion", "loyal", "potential", "at_risk", "hibernating", "new"] },
@@ -35,13 +34,13 @@ function SegmentacaoAvancada({ user, setPage }) {
 
   useEffect(() => {
     fetchData("clientes").then(res => setClientes(res.data || [])).catch(() => {});
-    setLojas(DB_FALLBACK.lojas || []);
-    
+    setLojas([]);
+
     const localSaved = localStorage.getItem("crm_segmentos_salvos");
     if (localSaved) {
       setSavedSegments(JSON.parse(localSaved));
     } else {
-      const mock = DB_FALLBACK.segmentos_salvos || [];
+      const mock = [];
       setSavedSegments(mock);
       localStorage.setItem("crm_segmentos_salvos", JSON.stringify(mock));
     }

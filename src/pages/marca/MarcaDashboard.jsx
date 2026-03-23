@@ -5,7 +5,7 @@ import { Avatar, Chip, KpiCard, ProgressBar, SectionHeader, ApTooltip } from "..
 import { fetchStats } from "../../lib/api";
 import VendedorDashboard from "./VendedorDashboard";
 import AgendaAdmin from "./AgendaAdmin";
-import { DB_FALLBACK } from "../../data/fallback";
+import EmptyState from "../../components/EmptyState";
 
 function MarcaDashboard({ user, setPage }) {
   if (user.role === "vendedor") return <VendedorDashboard user={user} setPage={setPage} />;
@@ -78,114 +78,82 @@ function MarcaDashboard({ user, setPage }) {
         </div>
       </div>
 
-      {/* Phase 5 - Equipe Status Widget */}
+      {/* Equipe + Agenda + Sugestões */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
         <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("gestao_vendedores")}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>👥 Status da Equipe</div>
-          {(() => {
-            const vendedores = DB_FALLBACK.usuarios.filter(u => u.marca_id === (user?.marca_id || user?.marcaId || "demo") && u.role === "vendedor");
-            const ativos = vendedores.filter(v => v.status_trabalho === "ativo").length;
-            const ausentes = vendedores.filter(v => v.status_trabalho !== "ativo" && v.status_trabalho !== "desligado").length;
-            return (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: T.muted }}>Ativos</span>
-                  <span style={{ fontWeight: 700, color: "#28cd41" }}>{ativos}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: T.muted }}>Ausentes</span>
-                  <span style={{ fontWeight: 700, color: "#ff9500" }}>{ausentes}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: T.muted }}>Total</span>
-                  <span style={{ fontWeight: 600 }}>{vendedores.length}</span>
-                </div>
+          {stats?.equipe ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: T.muted }}>Ativos</span>
+                <span style={{ fontWeight: 700, color: "#28cd41" }}>{stats.equipe.ativos || 0}</span>
               </div>
-            );
-          })()}
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: T.muted }}>Total</span>
+                <span style={{ fontWeight: 600 }}>{stats.equipe.total || 0}</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: T.muted, textAlign: "center", padding: "10px 0" }}>
+              Cadastre sua equipe em <b>Gestão de Vendedores</b>
+            </div>
+          )}
         </div>
 
-        {/* Agenda Today Widget for Dono */}
         <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("agenda_contatos")}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📅 Contatos Agendados Hoje</div>
-          {(() => {
-            const today = new Date().toISOString().slice(0, 10);
-            const agendados = (DB_FALLBACK.contatos_agendados || []).filter(a => a.data === today && a.status === "pendente");
-            const atrasados = (DB_FALLBACK.contatos_agendados || []).filter(a => a.status === "atrasado" || (a.status === "pendente" && a.data < today));
-            return (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: T.muted }}>Pendentes hoje</span>
-                  <span style={{ fontWeight: 700, color: "#4545F5" }}>{agendados.length}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: T.muted }}>Atrasados</span>
-                  <span style={{ fontWeight: 700, color: "#ff3b30" }}>{atrasados.length}</span>
-                </div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>📅 Contatos Hoje</div>
+          {stats?.agenda ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: T.muted }}>Pendentes</span>
+                <span style={{ fontWeight: 700, color: "#4545F5" }}>{stats.agenda.pendentes || 0}</span>
               </div>
-            );
-          })()}
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: T.muted }}>Atrasados</span>
+                <span style={{ fontWeight: 700, color: "#ff3b30" }}>{stats.agenda.atrasados || 0}</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: T.muted, textAlign: "center", padding: "10px 0" }}>
+              Agende contatos com clientes em <b>Agenda</b>
+            </div>
+          )}
         </div>
 
-        {/* Sugestões for Dono */}
-        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("sugestoes")}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>💡 Sugestões Proativas</div>
-          {(() => {
-            const emRisco = DB_FALLBACK.clientes.filter(c => c.segmento_rfm === "at_risk" || c.segmento_rfm === "hibernating").length;
-            const semContato = DB_FALLBACK.clientes.filter(c => c.recencia_dias > 30).length;
-            return (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: T.muted }}>Clientes em risco</span>
-                  <span style={{ fontWeight: 700, color: "#ff3b30" }}>{emRisco}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                  <span style={{ color: T.muted }}>Sem contato 30d+</span>
-                  <span style={{ fontWeight: 700, color: "#ff9500" }}>{semContato}</span>
-                </div>
+        <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("clientes")}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>💡 Sugestões</div>
+          {c > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: T.muted }}>Clientes em risco</span>
+                <span style={{ fontWeight: 700, color: "#ff3b30" }}>{rfm.at_risk || 0}</span>
               </div>
-            );
-          })()}
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: T.muted }}>Hibernando</span>
+                <span style={{ fontWeight: 700, color: "#ff9500" }}>{rfm.hibernating || 0}</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: T.muted, textAlign: "center", padding: "10px 0" }}>
+              Cadastre clientes para ver sugestões inteligentes
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Phase 4 Widgets */}
+      {/* Inbox + Automações + Pipeline */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
-        {/* Inbox Widget */}
         <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("inbox")}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>💬 Inbox</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: T.muted }}>Conversas abertas</span>
-              <span style={{ fontWeight: 700, color: "#4545F5" }}>{(DB_FALLBACK.inbox_conversas || []).filter(c => c.status === "aberta").length}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: T.muted }}>Sem resposta</span>
-              <span style={{ fontWeight: 700, color: "#ff9500" }}>{(DB_FALLBACK.inbox_conversas || []).filter(c => c.ultima_direcao === "entrada").length}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: T.muted }}>Tempo médio</span>
-              <span style={{ fontWeight: 600 }}>1h 23min</span>
-            </div>
+          <div style={{ fontSize: 12, color: T.muted, textAlign: "center", padding: "10px 0" }}>
+            Configure uma integração de mensagens para ativar o Inbox
           </div>
         </div>
 
-        {/* Automações Widget */}
         <div className="ap-card" style={{ padding: "18px 22px", cursor: "pointer" }} onClick={() => setPage && setPage("automacoes")}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>⚡ Automações</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: T.muted }}>Execuções hoje</span>
-              <span style={{ fontWeight: 700, color: "#4545F5" }}>{(DB_FALLBACK.automacao_execucoes || []).filter(e => (e.created_at || "").slice(0, 10) === new Date().toISOString().slice(0, 10)).length || 8}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: T.muted }}>Taxa de sucesso</span>
-              <span style={{ fontWeight: 700, color: "#28cd41" }}>87%</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-              <span style={{ color: T.muted }}>Campanhas ativas</span>
-              <span style={{ fontWeight: 600 }}>{(DB_FALLBACK.campanhas || []).filter(c => c.status === "ativa").length}</span>
-            </div>
+          <div style={{ fontSize: 12, color: T.muted, textAlign: "center", padding: "10px 0" }}>
+            Crie automações em <b>Automações</b> para ver dados aqui
           </div>
         </div>
 
@@ -195,15 +163,15 @@ function MarcaDashboard({ user, setPage }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
               <span style={{ color: T.muted }}>Clientes no programa</span>
-              <span style={{ fontWeight: 700, color: "#4545F5" }}>{(DB_FALLBACK.fidelidade_clientes || []).length}</span>
+              <span style={{ fontWeight: 700, color: "#4545F5" }}>{0}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
               <span style={{ color: T.muted }}>Pontos distribuídos</span>
-              <span style={{ fontWeight: 700, color: "#ff9500" }}>{((DB_FALLBACK.fidelidade_clientes || []).reduce((s, f) => s + (f.pontos || 0), 0)).toLocaleString("pt-BR")}</span>
+              <span style={{ fontWeight: 700, color: "#ff9500" }}>{(0).toLocaleString("pt-BR")}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
               <span style={{ color: T.muted }}>Indicações do mês</span>
-              <span style={{ fontWeight: 600 }}>{(DB_FALLBACK.indicacoes || []).filter(i => (i.created_at || "").startsWith("2026-03")).length}</span>
+              <span style={{ fontWeight: 600 }}>{0}</span>
             </div>
           </div>
         </div>

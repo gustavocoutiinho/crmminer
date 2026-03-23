@@ -3,10 +3,9 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { T, ROLE_CFG } from "../../lib/theme";
 import { Avatar, Chip, KpiCard, ProgressBar, ApTooltip } from "../../components/UI";
 import { fetchVendedorStats } from "../../lib/api";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function MetaHojeWidget({ user, setPage }) {
-  const metaContatos = DB_FALLBACK.metas.find(m => m.user_id === user.id && m.tipo === "contatos_diarios");
+  const metaContatos = null;
   if (!metaContatos) return null;
 
   const pct = metaContatos.valor_meta > 0 ? Math.min(100, Math.round((metaContatos.valor_atual / metaContatos.valor_meta) * 100)) : 0;
@@ -51,7 +50,7 @@ function MetaHojeWidget({ user, setPage }) {
 }
 
 function CarteiraWidget({ user }) {
-  const clientes = DB_FALLBACK.clientes.filter(c => c.vendedor_id === user.id);
+  const clientes = [];
   const now = new Date();
   const semContato30 = clientes.filter(c => {
     if (!c.ultimo_contato) return true;
@@ -85,9 +84,9 @@ function CarteiraWidget({ user }) {
 }
 
 function RankingWidget({ user }) {
-  const vendedores = DB_FALLBACK.usuarios.filter(u => u.role === "vendedor" && u.marca_id === (user.marca_id || user.marcaId || "demo"));
+  const vendedores = [];
   const ranked = vendedores.map(v => {
-    const m = DB_FALLBACK.metas.find(mt => mt.user_id === v.id && mt.tipo === "vendas_mensais");
+    const m = null;
     const pct = m && m.valor_meta > 0 ? (m.valor_atual / m.valor_meta) * 100 : 0;
     return { ...v, pct };
   }).sort((a, b) => b.pct - a.pct);
@@ -113,7 +112,7 @@ function RankingWidget({ user }) {
 
 function AgendaHojeWidget({ user, setPage }) {
   const today = new Date().toISOString().slice(0, 10);
-  const agendados = (DB_FALLBACK.contatos_agendados || []).filter(
+  const agendados = ([]).filter(
     a => a.marca_id === (user?.marca_id || user?.marcaId || "demo") && a.data === today && a.status === "pendente"
   ).slice(0, 3);
   const TIPO_ICON = { whatsapp: "💬", ligacao: "📞", email: "📧" };
@@ -126,7 +125,7 @@ function AgendaHojeWidget({ user, setPage }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {agendados.map(a => {
-            const cli = DB_FALLBACK.clientes.find(c => c.id === a.cliente_id);
+            const cli = null;
             return (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                 <span>{TIPO_ICON[a.tipo] || "📋"}</span>
@@ -142,7 +141,7 @@ function AgendaHojeWidget({ user, setPage }) {
 }
 
 function SugestoesWidget({ user, setPage }) {
-  const clientes = DB_FALLBACK.clientes.filter(c => c.marca_id === (user?.marca_id || user?.marcaId || "demo") && c.vendedor_id === user.id);
+  const clientes = [];
   const urgentes = clientes.filter(c => c.segmento_rfm === "at_risk" || c.segmento_rfm === "hibernating" || c.recencia_dias > 30).slice(0, 3);
 
   return (

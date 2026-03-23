@@ -2,14 +2,13 @@ import React, { useState, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader, Toggle, Modal, FormRow, Lbl } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function Fidelidade({ user }) {
   const toast = useToast();
   const marcaId = user?.marca_id || user?.marcaId || "demo";
 
   const [config, setConfig] = useState(() => {
-    return DB_FALLBACK.fidelidade_config || {
+    return {
       programa_nome: "Programa de Fidelidade",
       ativo: false,
       pontos_por_real: 1,
@@ -28,8 +27,8 @@ function Fidelidade({ user }) {
   const [editForm, setEditForm] = useState(config);
   const [showRanking, setShowRanking] = useState(false);
 
-  const fidClientes = useMemo(() => DB_FALLBACK.fidelidade_clientes || [], []);
-  const clientes = useMemo(() => DB_FALLBACK.clientes.filter((c) => c.marca_id === marcaId), [marcaId]);
+  const fidClientes = useMemo(() => [], []);
+  const clientes = useMemo(() => [], [marcaId]);
 
   const totalPontos = fidClientes.reduce((s, f) => s + (f.pontos || 0), 0);
   const totalIndicacoes = fidClientes.reduce((s, f) => s + (f.indicacoes || 0), 0);

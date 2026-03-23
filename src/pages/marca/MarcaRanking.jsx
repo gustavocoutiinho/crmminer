@@ -2,14 +2,13 @@ import React from "react";
 import { T, ROLE_CFG } from "../../lib/theme";
 import { Avatar, Chip, ProgressBar, SectionHeader } from "../../components/UI";
 import { useSupabaseQuery } from "../../lib/hooks";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function MarcaRanking({ user }) {
   const marcaId = user?.marca_id || user?.marcaId;
   const { data: apiUsers } = useSupabaseQuery("users", marcaId ? { eq: { marca_id: marcaId } } : {});
   const isVend = user.role === "vendedor";
 
-  const allVends = (apiUsers.length > 0 ? apiUsers : DB_FALLBACK.usuarios)
+  const allVends = (apiUsers)
     .filter((u) => u.role === "vendedor")
     .sort((a, b) => (+(b.meta_mensal || b.meta || 0)) - (+(a.meta_mensal || a.meta || 0)));
   const list = isVend ? allVends.filter((v) => v.nome === user.nome) : allVends;

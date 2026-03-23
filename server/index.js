@@ -536,6 +536,167 @@ app.post("/api/sync/shopify", requireAuth(async (req, res) => {
   }
 }));
 
+// ── Sync Olist ───────────────────────────────────────────────────────────────
+app.post("/api/sync/olist", requireAuth(async (req, res) => {
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  const marcaId = req.body.marca_id || req.user.marca_id;
+  if (!marcaId) return res.status(400).json({ error: "marca_id required" });
+
+  const [integ] = await q("SELECT * FROM integracoes WHERE marca_id=$1 AND tipo='olist'", [marcaId]);
+  if (!integ?.config?.api_key) return res.status(400).json({ error: "Olist não configurado. Adicione API Key e Seller ID nas integrações." });
+
+  const { api_key, seller_id } = integ.config;
+  const start = Date.now();
+  const [log] = await q("INSERT INTO sync_logs (marca_id, tipo, status) VALUES ($1, 'olist', 'running') RETURNING *", [marcaId]);
+  const logId = log.id;
+
+  try {
+    let clientesNovos = 0, clientesAtualizados = 0, pedidosNovos = 0, pedidosAtualizados = 0;
+    const headers = { Authorization: `Bearer ${api_key}` };
+
+    // Sync pedidos (orders)
+    let nextUrl = `https://api.olist.com/v2/sellers/${seller_id}/orders?limit=50`;
+    while (nextUrl) {
+      const r = await fetch(nextUrl, { headers });
+      if (!r.ok) break;
+      const data = await r.json();
+      const orders = data.results || data.data || [];
+
+      for (const order of orders) {
+        const custName = order.customer?.name || order.buyer?.name || "Cliente Olist";
+        const custEmail = order.customer?.email || order.buyer?.email || null;
+        const custPhone = order.customer?.phone || order.buyer?.phone || null;
+        const valor = parseFloat(order.total_amount || order.total || 0);
+
+        // Upsert cliente
+        const [existing] = await q("SELECT id FROM clientes WHERE marca_id=$1 AND email=$2 LIMIT 1", [marcaId, custEmail]);
+        let clienteId;
+        if (existing) {
+          clienteId = existing.id;
+          await q("UPDATE clientes SET total_pedidos=total_pedidos+1, receita_total=receita_total+$1, updated_at=now() WHERE id=$2", [valor, clienteId]);
+          clientesAtualizados++;
+        } else if (custEmail) {
+          const [novo] = await q("INSERT INTO clientes (marca_id, nome, email, telefone, total_pedidos, receita_total) VALUES ($1,$2,$3,$4,1,$5) RETURNING id",
+            [marcaId, custName, custEmail, custPhone, valor]);
+          clienteId = novo.id;
+          clientesNovos++;
+        }
+
+        // Upsert pedido
+        const orderId = String(order.id || order.order_id);
+        const [existPedido] = await q("SELECT id FROM pedidos WHERE marca_id=$1 AND external_id=$2 LIMIT 1", [marcaId, orderId]);
+        if (!existPedido) {
+          await q("INSERT INTO pedidos (marca_id, cliente_id, valor, status, origem, external_id, created_at) VALUES ($1,$2,$3,$4,'olist',$5,$6)",
+            [marcaId, clienteId, valor, order.status === "delivered" ? "entregue" : "aprovado", orderId, order.created_at || new Date().toISOString()]);
+          pedidosNovos++;
+        } else {
+          pedidosAtualizados++;
+        }
+      }
+
+      nextUrl = data.next || null;
+      if (orders.length === 0) break;
+    }
+
+    const duracao = Date.now() - start;
+    await q("UPDATE sync_logs SET status='success', clientes_novos=$1, clientes_atualizados=$2, pedidos_novos=$3, pedidos_atualizados=$4, duracao_ms=$5 WHERE id=$6",
+      [clientesNovos, clientesAtualizados, pedidosNovos, pedidosAtualizados, duracao, logId]);
+    await q("UPDATE integracoes SET status='conectado', ultimo_sync=now() WHERE id=$1", [integ.id]);
+
+    res.json({ ok: true, clientes: { novos: clientesNovos, atualizados: clientesAtualizados }, pedidos: { novos: pedidosNovos, atualizados: pedidosAtualizados }, duracao_ms: duracao });
+  } catch (e) {
+    const duracao = Date.now() - start;
+    await q("UPDATE sync_logs SET status='error', erros=1, detalhes=$1, duracao_ms=$2 WHERE id=$3",
+      [JSON.stringify({ error: e.message }), duracao, logId]);
+    await q("UPDATE integracoes SET status='erro' WHERE id=$1", [integ.id]).catch(() => {});
+    res.status(500).json({ error: e.message });
+  }
+}));
+
+// ── Sync Pagar.me ────────────────────────────────────────────────────────────
+app.post("/api/sync/pagarme", requireAuth(async (req, res) => {
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  const marcaId = req.body.marca_id || req.user.marca_id;
+  if (!marcaId) return res.status(400).json({ error: "marca_id required" });
+
+  const [integ] = await q("SELECT * FROM integracoes WHERE marca_id=$1 AND tipo='pagarme'", [marcaId]);
+  if (!integ?.config?.secret_key) return res.status(400).json({ error: "Pagar.me não configurado. Adicione a Secret Key nas integrações." });
+
+  const { secret_key } = integ.config;
+  const authHeader = "Basic " + Buffer.from(secret_key + ":").toString("base64");
+  const start = Date.now();
+  const [log] = await q("INSERT INTO sync_logs (marca_id, tipo, status) VALUES ($1, 'pagarme', 'running') RETURNING *", [marcaId]);
+  const logId = log.id;
+
+  try {
+    let clientesNovos = 0, clientesAtualizados = 0, pedidosNovos = 0, pedidosAtualizados = 0;
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const r = await fetch(`https://api.pagar.me/core/v5/orders?page=${page}&size=50`, {
+        headers: { Authorization: authHeader }
+      });
+      if (!r.ok) break;
+      const data = await r.json();
+      const orders = data.data || [];
+
+      for (const order of orders) {
+        const cust = order.customer || {};
+        const custName = cust.name || "Cliente Pagar.me";
+        const custEmail = cust.email || null;
+        const custPhone = cust.phones?.mobile_phone ? `${cust.phones.mobile_phone.area_code}${cust.phones.mobile_phone.number}` : null;
+        const valor = (order.amount || 0) / 100; // Pagar.me usa centavos
+
+        // Upsert cliente
+        let clienteId = null;
+        if (custEmail) {
+          const [existing] = await q("SELECT id FROM clientes WHERE marca_id=$1 AND email=$2 LIMIT 1", [marcaId, custEmail]);
+          if (existing) {
+            clienteId = existing.id;
+            clientesAtualizados++;
+          } else {
+            const [novo] = await q("INSERT INTO clientes (marca_id, nome, email, telefone, total_pedidos, receita_total) VALUES ($1,$2,$3,$4,1,$5) RETURNING id",
+              [marcaId, custName, custEmail, custPhone, valor]);
+            clienteId = novo.id;
+            clientesNovos++;
+          }
+        }
+
+        // Upsert pedido
+        const orderId = order.id || order.code;
+        const [existPedido] = await q("SELECT id FROM pedidos WHERE marca_id=$1 AND external_id=$2 LIMIT 1", [marcaId, orderId]);
+        const statusMap = { paid: "aprovado", pending: "pendente", canceled: "cancelado", failed: "cancelado" };
+        if (!existPedido) {
+          await q("INSERT INTO pedidos (marca_id, cliente_id, valor, status, origem, external_id, created_at) VALUES ($1,$2,$3,$4,'pagarme',$5,$6)",
+            [marcaId, clienteId, valor, statusMap[order.status] || "pendente", orderId, order.created_at || new Date().toISOString()]);
+          pedidosNovos++;
+        } else {
+          await q("UPDATE pedidos SET status=$1, updated_at=now() WHERE marca_id=$2 AND external_id=$3",
+            [statusMap[order.status] || "pendente", marcaId, orderId]);
+          pedidosAtualizados++;
+        }
+      }
+
+      hasMore = orders.length === 50;
+      page++;
+    }
+
+    const duracao = Date.now() - start;
+    await q("UPDATE sync_logs SET status='success', clientes_novos=$1, clientes_atualizados=$2, pedidos_novos=$3, pedidos_atualizados=$4, duracao_ms=$5 WHERE id=$6",
+      [clientesNovos, clientesAtualizados, pedidosNovos, pedidosAtualizados, duracao, logId]);
+    await q("UPDATE integracoes SET status='conectado', ultimo_sync=now() WHERE id=$1", [integ.id]);
+
+    res.json({ ok: true, clientes: { novos: clientesNovos, atualizados: clientesAtualizados }, pedidos: { novos: pedidosNovos, atualizados: pedidosAtualizados }, duracao_ms: duracao });
+  } catch (e) {
+    const duracao = Date.now() - start;
+    await q("UPDATE sync_logs SET status='error', erros=1, detalhes=$1, duracao_ms=$2 WHERE id=$3",
+      [JSON.stringify({ error: e.message }), duracao, logId]);
+    await q("UPDATE integracoes SET status='erro' WHERE id=$1", [integ.id]).catch(() => {});
+    res.status(500).json({ error: e.message });
+  }
+}));
+
 // ── Sync Logs ────────────────────────────────────────────────────────────────
 app.get("/api/sync/logs", requireAuth(async (req, res) => {
   const marcaId = req.user.marca_id;
@@ -930,6 +1091,40 @@ app.post("/api/integracoes/:id/test", requireAuth(async (req, res) => {
       if (!r.ok) return res.json({ ok: false, error: `Suri retornou ${r.status}` });
       await q("UPDATE integracoes SET status='conectado', ultimo_sync=now() WHERE id=$1", [integ.id]);
       return res.json({ ok: true, message: "Conexão com Suri OK" });
+    } catch (e) {
+      await q("UPDATE integracoes SET status='erro' WHERE id=$1", [integ.id]);
+      return res.json({ ok: false, error: e.message });
+    }
+  }
+
+  // ── Teste Olist ──
+  if (integ.tipo === "olist") {
+    const { seller_id, api_key } = integ.config;
+    if (!seller_id || !api_key) return res.json({ ok: false, error: "Seller ID e API Key são obrigatórios" });
+    try {
+      const r = await fetch(`https://api.olist.com/v2/sellers/${seller_id}`, {
+        headers: { Authorization: `Bearer ${api_key}` }
+      });
+      if (!r.ok) return res.json({ ok: false, error: `Olist retornou ${r.status}` });
+      await q("UPDATE integracoes SET status='conectado', ultimo_sync=now() WHERE id=$1", [integ.id]);
+      return res.json({ ok: true, message: "Conexão com Olist OK" });
+    } catch (e) {
+      await q("UPDATE integracoes SET status='erro' WHERE id=$1", [integ.id]);
+      return res.json({ ok: false, error: e.message });
+    }
+  }
+
+  // ── Teste Pagar.me ──
+  if (integ.tipo === "pagarme") {
+    const { secret_key } = integ.config;
+    if (!secret_key) return res.json({ ok: false, error: "Secret Key (sk_...) é obrigatória" });
+    try {
+      const r = await fetch("https://api.pagar.me/core/v5/orders?size=1", {
+        headers: { Authorization: "Basic " + Buffer.from(secret_key + ":").toString("base64") }
+      });
+      if (!r.ok) return res.json({ ok: false, error: `Pagar.me retornou ${r.status}` });
+      await q("UPDATE integracoes SET status='conectado', ultimo_sync=now() WHERE id=$1", [integ.id]);
+      return res.json({ ok: true, message: "Conexão com Pagar.me OK" });
     } catch (e) {
       await q("UPDATE integracoes SET status='erro' WHERE id=$1", [integ.id]);
       return res.json({ ok: false, error: e.message });

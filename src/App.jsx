@@ -5,6 +5,7 @@ import { logout as apiLogout } from "./lib/api";
 import Login from "./pages/Login";
 import PortalOwner from "./pages/owner/PortalOwner";
 import PortalMarca from "./pages/marca/PortalMarca";
+import WhatsNew from "./components/WhatsNew";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -23,6 +24,6 @@ export default function App() {
   };
 
   if (!user) return <ToastProvider><Login onLogin={handleLogin} /></ToastProvider>;
-  if (user.role === "miner") return <ToastProvider><PortalOwner user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /></ToastProvider>;
-  return <ToastProvider><PortalMarca user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /></ToastProvider>;
+  if (user.role === "miner") return <ToastProvider><WhatsNew /><PortalOwner user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /></ToastProvider>;
+  return <ToastProvider><WhatsNew /><PortalMarca user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /></ToastProvider>;
 }

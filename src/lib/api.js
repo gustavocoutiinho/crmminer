@@ -86,6 +86,12 @@ export async function recalculateRFM() {
 export async function syncShopify(marcaId) {
   return apiFetch("/api/sync/shopify", { method: "POST", body: JSON.stringify({ marca_id: marcaId }) });
 }
+export async function connectIntegracao(tipo, config) {
+  return apiFetch("/api/integracoes/connect", { method: "POST", body: JSON.stringify({ tipo, config }) });
+}
+export async function syncIntegracao(id) {
+  return apiFetch(`/api/integracoes/${id}/sync`, { method: "POST" });
+}
 
 export async function fetchSyncLogs() {
   return apiFetch("/api/sync/logs");

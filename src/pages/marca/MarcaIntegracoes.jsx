@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, Chip, Modal, FormRow, Lbl, KpiCard, SectionHeader, Toggle } from "../../components/UI";
-import { fetchIntegracoes, fetchIntegracao, updateIntegracao, testIntegracao, fetchTemplates, createTemplate, updateTemplate, deleteTemplate, enviarMensagem, fetchApiKeys, createApiKey, deleteApiKey, fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhook, syncShopify, fetchSyncLogs, API_URL } from "../../lib/api";
+import { fetchIntegracoes, fetchIntegracao, updateIntegracao, testIntegracao, fetchTemplates, createTemplate, updateTemplate, deleteTemplate, enviarMensagem, fetchApiKeys, createApiKey, deleteApiKey, fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhook, syncShopify, fetchSyncLogs, connectIntegracao, syncIntegracao, API_URL } from "../../lib/api";
 
 const CANAL_CFG = {
   whatsapp: { label: "WhatsApp", icon: "💬", c: "#128C7E", bg: "#e9fbed" },
@@ -29,6 +29,11 @@ function MarcaIntegracoes({ user }) {
   const [testResult, setTestResult] = useState({});
   const [testingId, setTestingId] = useState(null);
   const [savingConn, setSavingConn] = useState(false);
+  const [showConnect, setShowConnect] = useState(false);
+  const [connectType, setConnectType] = useState(null);
+  const [connectForm, setConnectForm] = useState({});
+  const [connecting, setConnecting] = useState(false);
+  const [connectResult, setConnectResult] = useState(null);
 
   /* ── Templates state ── */
   const [templates, setTemplates] = useState([]);
@@ -510,15 +515,89 @@ function MarcaIntegracoes({ user }) {
       </div>
 
       {/* ── TAB: CONEXÕES ── */}
+      {/* Modal Nova Integração */}
+      {showConnect && (
+        <Modal title={connectType ? `Conectar ${connectType.charAt(0).toUpperCase()+connectType.slice(1)}` : "Nova Integração"} onClose={() => { setShowConnect(false); setConnectType(null); setConnectForm({}); setConnectResult(null); }}>
+          {!connectType ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12 }}>
+              {[
+                { tipo: "shopify", label: "Shopify", icon: "🛍", desc: "E-commerce — clientes e pedidos" },
+                { tipo: "bling", label: "Bling", icon: "📦", desc: "ERP — produtos, NF-e, financeiro" },
+                { tipo: "olist", label: "Olist", icon: "🏪", desc: "Marketplace — pedidos e clientes" },
+                { tipo: "pagarme", label: "Pagar.me", icon: "💳", desc: "Pagamentos — cobranças e clientes" },
+                { tipo: "suri", label: "Suri", icon: "🤖", desc: "Atendimento — conversas e contatos" },
+              ].map(item => (
+                <div key={item.tipo} onClick={() => { setConnectType(item.tipo); setConnectForm({}); setConnectResult(null); }}
+                  style={{ padding: 18, borderRadius: 12, border: "2px solid #eee", cursor: "pointer", transition: "all 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "#4545F5"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "#eee"}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{item.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{item.label}</div>
+                  <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {connectType === "shopify" && (<>
+                <div><Lbl>URL da loja</Lbl><input className="ap-inp" placeholder="minhaloja.myshopify.com" value={connectForm.store||""} onChange={e => setConnectForm(f=>({...f,store:e.target.value}))}/></div>
+                <div><Lbl>Admin API Access Token</Lbl><input className="ap-inp" type="password" placeholder="shpat_..." value={connectForm.token||""} onChange={e => setConnectForm(f=>({...f,token:e.target.value}))}/></div>
+                <div style={{ fontSize: 12, color: T.muted, background: "#f5f5f7", borderRadius: 8, padding: 12 }}>
+                  <b>Como pegar o token:</b> Shopify Admin → Settings → Apps → Develop apps → Criar app → API credentials → Install → Revelar token
+                </div>
+              </>)}
+              {connectType === "bling" && (<>
+                <div><Lbl>API Key</Lbl><input className="ap-inp" type="password" placeholder="Cole sua API Key do Bling" value={connectForm.api_key||""} onChange={e => setConnectForm(f=>({...f,api_key:e.target.value}))}/></div>
+                <div style={{ fontSize: 12, color: T.muted, background: "#f5f5f7", borderRadius: 8, padding: 12 }}>
+                  <b>Como pegar:</b> Bling → Meu Negócio → Preferências → API → Gerar chave
+                </div>
+              </>)}
+              {connectType === "olist" && (<>
+                <div><Lbl>Seller ID</Lbl><input className="ap-inp" placeholder="Seu Seller ID" value={connectForm.seller_id||""} onChange={e => setConnectForm(f=>({...f,seller_id:e.target.value}))}/></div>
+                <div><Lbl>API Key</Lbl><input className="ap-inp" type="password" placeholder="Cole sua API Key" value={connectForm.api_key||""} onChange={e => setConnectForm(f=>({...f,api_key:e.target.value}))}/></div>
+              </>)}
+              {connectType === "pagarme" && (<>
+                <div><Lbl>API Key</Lbl><input className="ap-inp" type="password" placeholder="sk_live_..." value={connectForm.api_key||""} onChange={e => setConnectForm(f=>({...f,api_key:e.target.value}))}/></div>
+              </>)}
+              {connectType === "suri" && (<>
+                <div><Lbl>URL da API</Lbl><input className="ap-inp" placeholder="https://api.suri.com.br" value={connectForm.api_url||""} onChange={e => setConnectForm(f=>({...f,api_url:e.target.value}))}/></div>
+                <div><Lbl>Token</Lbl><input className="ap-inp" type="password" placeholder="Bearer token" value={connectForm.token||""} onChange={e => setConnectForm(f=>({...f,token:e.target.value}))}/></div>
+              </>)}
+              {connectResult && (
+                <div style={{ fontSize: 13, padding: 12, borderRadius: 8, background: connectResult.ok ? "#e9fbed" : "#ffe5e3", color: connectResult.ok ? "#1a7f2b" : "#cc2936" }}>
+                  {connectResult.ok ? `✓ ${connectResult.message}` : `✗ ${connectResult.error}`}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button className="ap-btn ap-btn-secondary" onClick={() => { setConnectType(null); setConnectForm({}); setConnectResult(null); }}>Voltar</button>
+                <button className="ap-btn ap-btn-primary" disabled={connecting} onClick={async () => {
+                  setConnecting(true); setConnectResult(null);
+                  try {
+                    const r = await connectIntegracao(connectType, connectForm);
+                    setConnectResult(r);
+                    if (r.ok) { fetchIntegracoes().then(r => setConexoes(r.data||[])); setTimeout(() => { setShowConnect(false); setConnectType(null); setConnectForm({}); setConnectResult(null); }, 2000); }
+                  } catch(e) { setConnectResult({ ok: false, error: e.message }); }
+                  setConnecting(false);
+                }}>{connecting ? "Conectando..." : "Testar e Conectar"}</button>
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+
       {tab === "conexoes" && (
         <div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+            <button className="ap-btn ap-btn-primary ap-btn-sm" onClick={() => setShowConnect(true)}>+ Nova Integração</button>
+          </div>
           {loadingConn ? (
             <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Carregando integrações...</div>
           ) : conexoes.length === 0 ? (
             <div className="ap-card" style={{ padding: 40, textAlign: "center" }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>🔗</div>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Nenhuma integração configurada</div>
-              <div style={{ fontSize: 13, color: T.muted }}>As integrações aparecerão aqui quando forem configuradas no sistema.</div>
+              <div style={{ fontSize: 13, color: T.muted, marginBottom: 16 }}>Conecte sua primeira plataforma para sincronizar dados automaticamente.</div>
+              <button className="ap-btn ap-btn-primary" onClick={() => setShowConnect(true)}>+ Conectar Integração</button>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>

@@ -2,14 +2,13 @@ import React, { useState, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function AutomacaoPrioridade({ user }) {
   const toast = useToast();
   const marcaId = user?.marca_id || user?.marcaId || "demo";
 
   const [prioridades, setPrioridades] = useState(() => {
-    const camps = DB_FALLBACK.campanhas || [];
+    const camps = [];
     return camps
       .filter((c) => c.status === "ativa" || c.status === "concluida")
       .map((c, i) => ({
@@ -24,7 +23,7 @@ function AutomacaoPrioridade({ user }) {
   });
 
   const clientes = useMemo(
-    () => DB_FALLBACK.clientes.filter((c) => c.marca_id === marcaId),
+    () => [],
     [marcaId]
   );
 

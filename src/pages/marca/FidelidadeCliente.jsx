@@ -2,16 +2,15 @@ import React, { useState, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, Modal, Lbl } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 function FidelidadeCliente({ clienteId, onClose }) {
   const toast = useToast();
 
-  const cliente = useMemo(() => DB_FALLBACK.clientes.find((c) => c.id === clienteId), [clienteId]);
-  const fidData = useMemo(() => (DB_FALLBACK.fidelidade_clientes || []).find((f) => f.cliente_id === clienteId) || { pontos: 0, nivel: "Bronze", indicacoes: 0, indicacoes_convertidas: 0 }, [clienteId]);
-  const config = useMemo(() => DB_FALLBACK.fidelidade_config || { niveis: [], pontos_por_real: 1 }, []);
-  const historico = useMemo(() => (DB_FALLBACK.pontos_historico || []).filter((h) => h.cliente_id === clienteId).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")), [clienteId]);
-  const indicacoes = useMemo(() => (DB_FALLBACK.indicacoes || []).filter((i) => i.indicador_id === clienteId), [clienteId]);
+  const cliente = useMemo(() => null, [clienteId]);
+  const fidData = useMemo(() => ({ pontos: 0, nivel: "Bronze", indicacoes: 0, indicacoes_convertidas: 0 }), [clienteId]);
+  const config = useMemo(() => ({ niveis: [], pontos_por_real: 1 }), []);
+  const historico = useMemo(() => [], [clienteId]);
+  const indicacoes = useMemo(() => [], [clienteId]);
 
   const [showCreditar, setShowCreditar] = useState(false);
   const [creditarPontos, setCreditarPontos] = useState("");

@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader, Toggle } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 import useAutomationEngine from "../../hooks/useAutomationEngine";
 
 function AutomacaoExecutor({ user }) {
@@ -11,7 +10,7 @@ function AutomacaoExecutor({ user }) {
   const [autoExec, setAutoExec] = useState({});
 
   const automacoes = useMemo(() => {
-    const camps = DB_FALLBACK.campanhas || [];
+    const camps = [];
     return camps.map((c, i) => ({
       id: c.id || `auto_${i}`,
       nome: c.nome,
@@ -26,11 +25,11 @@ function AutomacaoExecutor({ user }) {
   }, []);
 
   const clientes = useMemo(
-    () => DB_FALLBACK.clientes.filter((c) => c.marca_id === marcaId),
+    () => [],
     [marcaId]
   );
 
-  const execucoesMock = useMemo(() => DB_FALLBACK.automacao_execucoes || [], []);
+  const execucoesMock = useMemo(() => [], []);
 
   const engine = useAutomationEngine({ automacoes, clientes, execucoes: execucoesMock });
 

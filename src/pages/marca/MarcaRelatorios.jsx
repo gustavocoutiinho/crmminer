@@ -3,16 +3,15 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { T, RFM_CFG } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 const PIE_COLORS = ["#4545F5", "#28cd41", "#ff9500", "#ff3b30", "#8e44ef", "#00c7be", "#ffd60a"];
 
 function MarcaRelatorios({ user }) {
   const [tab, setTab] = useState("vendas");
   const toast = useToast();
-  const mock = DB_FALLBACK.relatorios_mock || {};
-  const clientes = DB_FALLBACK.clientes;
-  const fidelidade = DB_FALLBACK.fidelidade_clientes || [];
+  const mock = {};
+  const clientes = [];
+  const fidelidade = [];
 
   const tabs = [
     { k: "vendas", l: "💰 Vendas" },

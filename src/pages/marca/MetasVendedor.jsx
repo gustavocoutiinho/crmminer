@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 import RankingLoja from "./RankingLoja";
 
 const TIPO_CFG = {
@@ -78,7 +77,7 @@ function MetasVendedor({ user }) {
   const [toasted, setToasted] = useState(new Set());
 
   useEffect(() => {
-    const userMetas = DB_FALLBACK.metas.filter(m => m.user_id === user.id);
+    const userMetas = [];
     setMetas(userMetas);
   }, [user.id]);
 

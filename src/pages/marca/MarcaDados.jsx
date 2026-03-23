@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { T, RFM_CFG } from "../../lib/theme";
 import { Chip, SectionHeader } from "../../components/UI";
 import { useSupabaseQuery } from "../../lib/hooks";
-import { DB_FALLBACK } from "../../data/fallback";
 import { importClientes } from "../../lib/api";
 
 function MarcaDados({ user }) {
@@ -11,9 +10,9 @@ function MarcaDados({ user }) {
   const { data: dbVendedores } = useSupabaseQuery("users", { eq: { marca_id: marcaId } });
   const { data: dbCampanhas } = useSupabaseQuery("campanhas", { eq: { marca_id: marcaId } });
 
-  const clientes = dbClientes.length > 0 ? dbClientes : DB_FALLBACK.clientes;
-  const vendedores = (dbVendedores.length > 0 ? dbVendedores : DB_FALLBACK.usuarios).filter((u) => u.role === "vendedor");
-  const campanhas = dbCampanhas.length > 0 ? dbCampanhas : DB_FALLBACK.campanhas;
+  const clientes = dbClientes;
+  const vendedores = dbVendedores.filter((u) => u.role === "vendedor");
+  const campanhas = dbCampanhas;
 
   const [tab, setTab] = useState("exportar");
   const [importing, setImporting] = useState(false);

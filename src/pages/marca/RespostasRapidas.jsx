@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, SectionHeader, Modal, Lbl } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
-import { DB_FALLBACK } from "../../data/fallback";
 
 const CATEGORIAS = [
   { k: "todas", label: "Todas", icon: "📋" },
@@ -32,7 +31,7 @@ const VARIAVEIS = [
 
 function RespostasRapidas({ user, onUseResposta, inModal = false }) {
   const toast = useToast();
-  const [respostas, setRespostas] = useState(() => DB_FALLBACK.respostas_rapidas || []);
+  const [respostas, setRespostas] = useState(() => []);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("todas");
   const [editItem, setEditItem] = useState(null);

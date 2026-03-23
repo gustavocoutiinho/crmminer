@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, Modal, Chip } from "../../components/UI";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
-import { DB_FALLBACK } from "../../data/fallback";
 
 export default function GestaoLojas({ user, setPage }) {
   const [lojas, setLojas] = useState([]);
@@ -16,10 +15,9 @@ export default function GestaoLojas({ user, setPage }) {
 
   const loadData = () => {
     setLoading(true);
-    // Using DB_FALLBACK directly for UI demonstration without requiring active mock API
-    setLojas(DB_FALLBACK.lojas || []);
-    setUsuarios(DB_FALLBACK.usuarios || []);
-    setClientes(DB_FALLBACK.clientes || []);
+    setLojas([]);
+    setUsuarios([]);
+    setClientes([]);
     setLoading(false);
   };
 

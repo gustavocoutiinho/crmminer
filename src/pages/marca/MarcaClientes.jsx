@@ -3,7 +3,7 @@ import { T, RFM_CFG } from "../../lib/theme";
 import { Avatar, Chip, SectionHeader, Modal, Lbl } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
 import { fetchData, fetchTags } from "../../lib/api";
-import { DB_FALLBACK } from "../../data/fallback";
+import EmptyState from "../../components/EmptyState";
 import { useCarteira } from "../../hooks/useCarteira";
 import { useFrequencia } from "../../hooks/useFrequencia";
 import ClienteDetailModal from "./ClienteDetailModal";
@@ -74,8 +74,7 @@ function MarcaClientes({ user }) {
   const isAdmin = user.role === "admin" || user.role === "miner";
   const isSup = user.role === "gerente" || isAdmin;
 
-  const marca = DB_FALLBACK.marcas.find(m => m.id === (user.marca_id || user.marcaId || "demo"));
-  const configMarca = marca?.config || { intervalo_minimo_contato_horas: 48 };
+  const configMarca = user?.config || { intervalo_minimo_contato_horas: 48 };
 
   // Load tags
   useEffect(() => { fetchTags().then(r => setAvailableTags(r.data || [])).catch(() => {}); }, []);
@@ -98,9 +97,8 @@ function MarcaClientes({ user }) {
     fetchData("clientes", opts)
       .then(r => { setAllClientes(r.data || []); setTotal(r.total || 0); setLoading(false); })
       .catch(() => {
-        // Fallback
-        setAllClientes(DB_FALLBACK.clientes);
-        setTotal(DB_FALLBACK.clientes.length);
+        setAllClientes([]);
+        setTotal(0);
         setLoading(false);
       });
   }, [filter, debouncedSearch, orderBy, orderDir, tagFilter]);
@@ -170,7 +168,7 @@ function MarcaClientes({ user }) {
     setAllClientes(prev => prev.map(c =>
       c.id === transferCliente.id ? { ...c, vendedor_id: vendedorId } : c
     ));
-    const vendedor = DB_FALLBACK.usuarios.find(u => u.id === vendedorId);
+    const vendedor = null;
     toast(`${transferCliente.nome} transferido para ${vendedor?.nome || "vendedor"}! ✅`, "success");
     setTransferCliente(null);
   };
@@ -194,7 +192,7 @@ function MarcaClientes({ user }) {
   ];
 
   const nomeVendedor = (vendedorId) => {
-    const v = DB_FALLBACK.usuarios.find(u => u.id === vendedorId);
+    const v = null;
     return v?.nome?.split(" ")[0] || "—";
   };
 
@@ -378,7 +376,7 @@ function MarcaClientes({ user }) {
       {transferCliente && (
         <TransferModal
           cliente={transferCliente}
-          usuarios={DB_FALLBACK.usuarios}
+          usuarios={[]}
           onConfirm={handleTransfer}
           onClose={() => setTransferCliente(null)}
         />

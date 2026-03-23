@@ -3,7 +3,6 @@ import { T } from "../../lib/theme";
 import { Chip, Modal, FormRow, Lbl, KpiCard, SectionHeader, Toggle } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
 import { fetchAutomacoes, fetchAutomacao, updateAutomacao, createAutomacao, previewAutomacao, deleteAutomacao, fetchAutoExecucoes, duplicateAutomacao } from "../../lib/api";
-import { DB_FALLBACK } from "../../data/fallback";
 import AutomacaoExecutor from "./AutomacaoExecutor";
 import AutomacaoPrioridade from "./AutomacaoPrioridade";
 import useAutomationEngine from "../../hooks/useAutomationEngine";

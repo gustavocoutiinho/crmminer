@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { T } from "../../lib/theme";
 import { MinerLogo } from "../../components/UI";
 import { useSupabaseQuery } from "../../lib/hooks";
-import { DB_FALLBACK } from "../../data/fallback";
 import GlobalSearch from "../../components/GlobalSearch";
 import Sidebar from "../../components/Sidebar";
 import NotificationBell from "../../components/NotificationBell";
@@ -22,7 +21,7 @@ function PortalOwner({ user, onLogout, dark, onToggleDark }) {
   const [page, setPage] = useState("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
   const { data: sbMarcas, loading: loadingMarcas, refetch: refetchMarcas } = useSupabaseQuery("marcas");
-  const [localMarcas, setLocalMarcas] = useState(DB_FALLBACK.marcas);
+  const [localMarcas, setLocalMarcas] = useState([]);
 
   const marcas = sbMarcas && sbMarcas.length > 0 ? sbMarcas : localMarcas;
   const setMarcas = sbMarcas && sbMarcas.length > 0 ? () => {} : setLocalMarcas;

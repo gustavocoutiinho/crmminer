@@ -3,7 +3,6 @@ import { T } from "../../lib/theme";
 import { Avatar, Chip, Modal } from "../../components/UI";
 import { fetchInbox, enviarMensagem, fetchTemplates } from "../../lib/api";
 import { inboxTimeAgo } from "../../utils/helpers";
-import { DB_FALLBACK } from "../../data/fallback";
 import useInboxAI from "../../hooks/useInboxAI";
 import InboxAIPanel from "./InboxAIPanel";
 import RespostasRapidas from "./RespostasRapidas";
@@ -38,12 +37,12 @@ function MarcaInbox({ user }) {
         if (apiConversas.length > 0) {
           setConversas(apiConversas);
         } else {
-          setConversas(DB_FALLBACK.inbox_conversas || []);
+          setConversas([]);
         }
         setLoading(false);
       })
       .catch(() => {
-        setConversas(DB_FALLBACK.inbox_conversas || []);
+        setConversas([]);
         setLoading(false);
       });
     fetchTemplates("whatsapp")

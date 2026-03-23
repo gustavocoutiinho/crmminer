@@ -1,19 +1,16 @@
 import React, { useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Avatar } from "../../components/UI";
-import { DB_FALLBACK } from "../../data/fallback";
 
 const MEDALS = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 function RankingLoja({ user }) {
   const ranking = useMemo(() => {
-    const vendedores = DB_FALLBACK.usuarios.filter(u =>
-      u.role === "vendedor" && u.marca_id === (user.marca_id || user.marcaId || "demo")
-    );
+    const vendedores = [];
 
     return vendedores.map(v => {
-      const metaVendas = DB_FALLBACK.metas.find(m => m.user_id === v.id && m.tipo === "vendas_mensais");
-      const metaContatos = DB_FALLBACK.metas.find(m => m.user_id === v.id && m.tipo === "contatos_diarios");
+      const metaVendas = null;
+      const metaContatos = null;
       const pctVendas = metaVendas && metaVendas.valor_meta > 0
         ? Math.round((metaVendas.valor_atual / metaVendas.valor_meta) * 100)
         : 0;

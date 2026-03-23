@@ -2149,6 +2149,23 @@ app.get("/api/stats/owner", requireAuth(async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 }));
 
+// ── Changelog (Novidades) ────────────────────────────────────────────────────
+app.get("/api/changelog", async (req, res) => {
+  try {
+    const rows = await q("SELECT * FROM changelog ORDER BY created_at DESC LIMIT 5");
+    res.json({ data: rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/api/changelog", requireAuth(async (req, res) => {
+  if (req.user.role !== "miner") return res.status(403).json({ error: "Apenas miner" });
+  const { versao, titulo, itens } = req.body;
+  if (!versao || !titulo) return res.status(400).json({ error: "versao e titulo required" });
+  const rows = await q("INSERT INTO changelog (versao, titulo, itens) VALUES ($1,$2,$3) RETURNING *",
+    [versao, titulo, JSON.stringify(itens || [])]);
+  res.status(201).json({ data: rows[0] });
+}));
+
 // ── Onboarding ───────────────────────────────────────────────────────────────
 app.get("/api/onboarding", requireAuth(async (req, res) => {
   try {

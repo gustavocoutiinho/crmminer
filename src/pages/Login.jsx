@@ -106,7 +106,7 @@ function Login({ onLogin }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f5f5f7 0%, #eeeeff 50%, #f5f5f7 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, overflow: "hidden", position: "relative" }}>
-      <style>{STYLES}</style>
+      {/* styles in global.css */}
 
       {/* Floating background circles */}
       <div style={floatCircle(420, "-5%", "-8%", "#4545F5", "floatBg", 14)} />

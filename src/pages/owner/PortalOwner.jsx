@@ -29,7 +29,7 @@ function PortalOwner({ user, onLogout, dark, onToggleDark }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg)", overflow: "hidden" }}>
-      <style>{STYLES}</style>
+      {/* styles in global.css */}
       <GlobalSearch setPage={setPage} />
       <div className="mobile-header" style={{ display: "none" }}>
         <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", padding: 4, color: T.text }}>☰</button>

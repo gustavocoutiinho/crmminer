@@ -23,7 +23,7 @@ export default function App() {
     setUser(null);
   };
 
-  if (!user) return <ToastProvider><Login onLogin={handleLogin} /></ToastProvider>;
-  if (user.role === "miner") return <ToastProvider><WhatsNew /><PortalOwner user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /></ToastProvider>;
-  return <ToastProvider><WhatsNew /><PortalMarca user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /></ToastProvider>;
+  if (!user) return <ToastProvider><Login onLogin={handleLogin} /><div className="app-version">Miner CRM v5.2</div></ToastProvider>;
+  if (user.role === "miner") return <ToastProvider><WhatsNew /><PortalOwner user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /><div className="app-version">Miner CRM v5.2</div></ToastProvider>;
+  return <ToastProvider><WhatsNew /><PortalMarca user={user} onLogout={handleLogout} dark={dark} onToggleDark={onToggleDark} /><div className="app-version">Miner CRM v5.2</div></ToastProvider>;
 }

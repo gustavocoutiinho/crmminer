@@ -93,6 +93,13 @@ export async function syncIntegracao(id) {
   return apiFetch(`/api/integracoes/${id}/sync`, { method: "POST" });
 }
 
+export async function forgotPassword(email) {
+  return apiFetch("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
+}
+export async function resetPassword(token, password) {
+  return apiFetch("/api/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) });
+}
+
 export async function fetchSyncLogs() {
   return apiFetch("/api/sync/logs");
 }

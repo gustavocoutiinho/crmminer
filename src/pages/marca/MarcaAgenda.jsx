@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, Chip, Modal, FormRow, Lbl, KpiCard, SectionHeader, Toggle } from "../../components/UI";
-import { useSupabaseQuery } from "../../lib/hooks";
-import { fetchTarefas, updateTarefa, deleteTarefa, createRecord } from "../../lib/api";
+import { fetchTarefas, updateTarefa, deleteTarefa, createRecord, API_URL } from "../../lib/api";
 
 const TAREFA_STATUS = {
   pendente: { label: "Pendente", icon: "⏳", c: "#ff9500", bg: "#fff3e0" },
@@ -31,10 +30,15 @@ function MarcaAgenda({ user }) {
   const [filterResp, setFilterResp] = useState("");
   const [sortCol, setSortCol] = useState("prioridade");
   const [sortDir, setSortDir] = useState("asc");
-  const { data: teamUsers } = useSupabaseQuery("users", marcaId ? { eq: { marca_id: marcaId } } : {});
-  const { data: sbClientes } = useSupabaseQuery("clientes", marcaId ? { eq: { marca_id: marcaId } } : {});
-  const team = teamUsers || [];
-  const clientes = sbClientes || [];
+  const [team, setTeam] = useState([]);
+  const [clientes, setClientes] = useState([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("crm_token");
+    const headers = { Authorization: `Bearer ${token}` };
+    fetch(`/api/data/users?limit=100`, { headers }).then(r=>r.json()).then(d=>setTeam(d.data||[])).catch(()=>{});
+    fetch(`/api/data/clientes?limit=100`, { headers }).then(r=>r.json()).then(d=>setClientes(d.data||[])).catch(()=>{});
+  }, []);
 
   const loadTasks = useCallback(async () => {
     try {

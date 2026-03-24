@@ -280,3 +280,57 @@ input:checked ~ .ap-toggle-track::before { transform:translateX(20px); }
   .kpi-grid-4 { grid-template-columns: 1fr !important; }
   .ap-card { border-radius: 14px !important; }
 }
+
+/* ── Melhorias v5.2 ── */
+
+/* Transição suave ao trocar de página */
+.fade-up { animation: fadeUp 0.25s ease-out; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Hover nas linhas de tabela */
+tr.hoverable:hover { background: rgba(69,69,245,0.04) !important; cursor: pointer; }
+tr.hoverable { transition: background 0.15s ease; }
+
+/* Scroll suave */
+html { scroll-behavior: smooth; }
+
+/* Scrollbar custom */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* Loading skeleton */
+.skeleton { background: linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0.06) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+[data-theme="dark"] .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.06) 75%); background-size: 200% 100%; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Botão voltar ao topo */
+.back-to-top { position: fixed; bottom: 24px; right: 24px; width: 40px; height: 40px; border-radius: 50%; background: #4545F5; color: #fff; border: none; font-size: 18px; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 99; box-shadow: 0 4px 12px rgba(69,69,245,0.3); }
+.back-to-top.visible { opacity: 1; }
+.back-to-top:hover { transform: scale(1.1); }
+
+/* Chip de RFM colorido */
+.rfm-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+
+/* Print friendly */
+@media print {
+  .sidebar, .mobile-header, .back-to-top, button { display: none !important; }
+  .ap-card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+  body { background: #fff !important; color: #000 !important; }
+}
+
+/* KPI card hover */
+.ap-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.ap-kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+
+/* Responsive grids */
+@media (max-width: 768px) {
+  .kpi-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* Versão no rodapé */
+.app-version { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 10px; color: rgba(0,0,0,0.2); pointer-events: none; z-index: 1; }
+[data-theme="dark"] .app-version { color: rgba(255,255,255,0.15); }

@@ -4,6 +4,21 @@ import { Avatar, Chip, Modal, FormRow, Lbl, KpiCard, SectionHeader, Toggle } fro
 import { useSupabaseQuery } from "../../lib/hooks";
 import { fetchTarefas, updateTarefa, deleteTarefa, createRecord } from "../../lib/api";
 
+const TAREFA_STATUS = {
+  pendente: { label: "Pendente", icon: "⏳", c: "#ff9500", bg: "#fff3e0" },
+  em_andamento: { label: "Em Andamento", icon: "🔄", c: "#007aff", bg: "#e5f0ff" },
+  concluida: { label: "Concluída", icon: "✅", c: "#28cd41", bg: "#e9fbed" },
+  cancelada: { label: "Cancelada", icon: "❌", c: "#ff3b30", bg: "#ffe5e3" },
+};
+const PRIORIDADE_CFG = {
+  urgente: { label: "Urgente", c: "#ff3b30", bg: "#ffe5e3" },
+  alta: { label: "Alta", c: "#ff9500", bg: "#fff3e0" },
+  media: { label: "Média", c: "#007aff", bg: "#e5f0ff" },
+  baixa: { label: "Baixa", c: "#aeaeb2", bg: "#f5f5f7" },
+};
+const TIPO_TAREFA = [["geral","Geral"],["follow-up","Follow-up"],["ligacao","Ligação"],["reuniao","Reunião"],["entrega","Entrega"]];
+const TIPO_ICON = { geral: "📋", "follow-up": "🔁", ligacao: "📞", reuniao: "🤝", entrega: "📦" };
+
 function MarcaAgenda({ user }) {
   const marcaId = user?.marca_id || user?.marcaId;
   const [tasks, setTasks] = useState([]);

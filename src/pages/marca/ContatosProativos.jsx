@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, Chip, SectionHeader, ProgressBar } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
 import { useContatosProativos } from "../../hooks/useContatosProativos";
 import AgendarContatoModal from "./AgendarContatoModal";
+import { fetchData } from "../../lib/api";
 
 const RFM_LABEL = { champion: "Campeão", loyal: "Fiel", potential: "Potencial", at_risk: "Em Risco", em_risco: "Em Risco", hibernating: "Inativo", new: "Novo" };
 
@@ -15,7 +16,10 @@ function ContatosProativos({ user }) {
   const [contatados, setContatados] = useState(0);
   const [showAgendar, setShowAgendar] = useState(null);
 
-  const clientes = [];
+  const [clientes, setClientes] = useState([]);
+  useEffect(() => {
+    fetchData("clientes", { limit: 5000 }).then(r => setClientes(r.data || [])).catch(() => {});
+  }, []);
   const visiveis = sugestoes.filter(s => !pulados.includes(s.cliente.id));
   const realizados = contatados;
   const pct = meta > 0 ? Math.min(100, Math.round((realizados / meta) * 100)) : 0;

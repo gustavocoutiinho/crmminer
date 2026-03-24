@@ -3,6 +3,7 @@ import { T } from "../../lib/theme";
 import { SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
 import RankingLoja from "./RankingLoja";
+import { fetchData } from "../../lib/api";
 
 const TIPO_CFG = {
   contatos_diarios: { label: "Contatos Hoje", icon: "📞", unit: "", format: v => String(v) },
@@ -77,8 +78,15 @@ function MetasVendedor({ user }) {
   const [toasted, setToasted] = useState(new Set());
 
   useEffect(() => {
-    const userMetas = [];
-    setMetas(userMetas);
+    fetchData("metas", { limit: 50 }).then(r => {
+      const all = r.data || [];
+      const userMetas = all.filter(m => m.usuario_id === user.id).map(m => ({
+        ...m,
+        valor_meta: +m.meta_valor || 0,
+        valor_atual: +m.valor_atual || 0,
+      }));
+      setMetas(userMetas);
+    }).catch(() => {});
   }, [user.id]);
 
   // Toast when 100%

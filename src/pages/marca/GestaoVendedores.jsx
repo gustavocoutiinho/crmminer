@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { T, ROLE_CFG } from "../../lib/theme";
 import { Avatar, Chip, SectionHeader, Modal, Lbl, ProgressBar } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
+import { fetchData } from "../../lib/api";
 
 const STATUS_CFG = {
   ativo: { label: "Ativo", c: "#28cd41", bg: "#e9fbed", icon: "🟢" },
@@ -14,15 +15,25 @@ const STATUS_CFG = {
 
 function GestaoVendedores({ user }) {
   const marcaId = user?.marca_id || user?.marcaId || "demo";
-  const [usuarios, setUsuarios] = useState(
-    []
-  );
+  const [usuarios, setUsuarios] = useState([]);
   const [editUser, setEditUser] = useState(null);
   const [showAusencia, setShowAusencia] = useState(null);
   const toast = useToast();
 
-  const clientes = [];
-  const metas = [];
+  const [clientes, setClientes] = useState([]);
+  const [metas, setMetas] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetchData("users", { limit: 200 }),
+      fetchData("clientes", { limit: 5000 }),
+      fetchData("metas", { limit: 200 }),
+    ]).then(([u, c, m]) => {
+      setUsuarios(u.data || []);
+      setClientes(c.data || []);
+      setMetas(m.data || []);
+    }).catch(() => {});
+  }, []);
 
   const getVendedorStats = (vendedor) => {
     const clis = clientes.filter(c => c.vendedor_id === vendedor.id);

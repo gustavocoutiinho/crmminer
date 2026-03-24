@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
+import { fetchData } from "../../lib/api";
 
 function IndiqueCashback({ user }) {
   const toast = useToast();
@@ -9,8 +10,18 @@ function IndiqueCashback({ user }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("todas");
 
-  const indicacoes = useMemo(() => [], []);
-  const clientes = useMemo(() => [], [marcaId]);
+  const [indicacoes, setIndicacoes] = useState([]);
+  const [clientes, setClientes] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetchData("indicacoes", { limit: 500 }),
+      fetchData("clientes", { limit: 5000 }),
+    ]).then(([ind, cl]) => {
+      setIndicacoes(ind.data || []);
+      setClientes(cl.data || []);
+    }).catch(() => {});
+  }, [marcaId]);
 
   const totalIndicacoes = indicacoes.length;
   const convertidas = indicacoes.filter((i) => i.status === "convertida").length;

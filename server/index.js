@@ -2054,32 +2054,32 @@ app.get("/api/oportunidades/funil", requireAuth(async (req, res) => {
 
     const stages = await q(
       `SELECT etapa, COUNT(*)::int as count, COALESCE(SUM(valor),0)::numeric as valor
-       FROM oportunidades WHERE marca_id = $1 GROUP BY etapa ORDER BY etapa`, [marcaId]);
+       FROM pipeline WHERE marca_id = $1 GROUP BY etapa ORDER BY etapa`, [marcaId]);
 
     const totalAtivos = await q(
       `SELECT COUNT(*)::int as count, COALESCE(SUM(valor),0)::numeric as valor
-       FROM oportunidades WHERE marca_id = $1 AND etapa NOT IN ('fechado_ganho','fechado_perdido')`, [marcaId]);
+       FROM pipeline WHERE marca_id = $1 AND etapa NOT IN ('fechado_ganho','fechado_perdido')`, [marcaId]);
 
     const ganhos = await q(
-      `SELECT COUNT(*)::int as count FROM oportunidades WHERE marca_id = $1 AND etapa = 'fechado_ganho'`, [marcaId]);
+      `SELECT COUNT(*)::int as count FROM pipeline WHERE marca_id = $1 AND etapa = 'fechado_ganho'`, [marcaId]);
     const perdidos = await q(
-      `SELECT COUNT(*)::int as count FROM oportunidades WHERE marca_id = $1 AND etapa = 'fechado_perdido'`, [marcaId]);
+      `SELECT COUNT(*)::int as count FROM pipeline WHERE marca_id = $1 AND etapa = 'fechado_perdido'`, [marcaId]);
 
     const totalFechados = (ganhos[0]?.count || 0) + (perdidos[0]?.count || 0);
     const winRate = totalFechados > 0 ? Math.round((ganhos[0]?.count || 0) / totalFechados * 100) : 0;
 
     const ticketMedio = await q(
-      `SELECT COALESCE(AVG(valor),0)::numeric as avg FROM oportunidades WHERE marca_id = $1 AND etapa = 'fechado_ganho'`, [marcaId]);
+      `SELECT COALESCE(AVG(valor),0)::numeric as avg FROM pipeline WHERE marca_id = $1 AND etapa = 'fechado_ganho'`, [marcaId]);
 
     const recentWins = await q(
-      `SELECT o.*, c.nome as cliente_nome, u.nome as vendedor_nome
-       FROM oportunidades o LEFT JOIN clientes c ON o.cliente_id = c.id LEFT JOIN users u ON o.vendedor_id = u.id
-       WHERE o.marca_id = $1 AND o.etapa = 'fechado_ganho' ORDER BY o.updated_at DESC LIMIT 10`, [marcaId]);
+      `SELECT o.*, o.responsavel_id as vendedor_id, c.nome as cliente_nome, u.nome as vendedor_nome
+       FROM pipeline o LEFT JOIN clientes c ON o.cliente_id = c.id LEFT JOIN users u ON o.responsavel_id = u.id
+       WHERE o.marca_id = $1 AND o.etapa = 'fechado_ganho' ORDER BY o.updated_at DESC NULLS LAST LIMIT 10`, [marcaId]);
 
     const recentLosses = await q(
-      `SELECT o.*, c.nome as cliente_nome, u.nome as vendedor_nome
-       FROM oportunidades o LEFT JOIN clientes c ON o.cliente_id = c.id LEFT JOIN users u ON o.vendedor_id = u.id
-       WHERE o.marca_id = $1 AND o.etapa = 'fechado_perdido' ORDER BY o.updated_at DESC LIMIT 10`, [marcaId]);
+      `SELECT o.*, o.responsavel_id as vendedor_id, c.nome as cliente_nome, u.nome as vendedor_nome
+       FROM pipeline o LEFT JOIN clientes c ON o.cliente_id = c.id LEFT JOIN users u ON o.responsavel_id = u.id
+       WHERE o.marca_id = $1 AND o.etapa = 'fechado_perdido' ORDER BY o.updated_at DESC NULLS LAST LIMIT 10`, [marcaId]);
 
     res.json({
       por_etapa: stages,
@@ -2106,23 +2106,23 @@ app.get("/api/oportunidades", requireAuth(async (req, res) => {
     let idx = 2;
 
     if (etapa) { where += ` AND o.etapa = $${idx++}`; params.push(etapa); }
-    if (vendedor_id) { where += ` AND o.vendedor_id = $${idx++}`; params.push(vendedor_id); }
+    if (vendedor_id) { where += ` AND o.responsavel_id = $${idx++}`; params.push(vendedor_id); }
     if (search) { where += ` AND (o.titulo ILIKE $${idx} OR c.nome ILIKE $${idx})`; params.push(`%${search}%`); idx++; }
 
     const data = await q(
-      `SELECT o.*, c.nome as cliente_nome, c.email as cliente_email, u.nome as vendedor_nome
-       FROM oportunidades o
+      `SELECT o.*, o.responsavel_id as vendedor_id, c.nome as cliente_nome, c.email as cliente_email, u.nome as vendedor_nome
+       FROM pipeline o
        LEFT JOIN clientes c ON o.cliente_id = c.id
-       LEFT JOIN users u ON o.vendedor_id = u.id
-       ${where} ORDER BY o.updated_at DESC`, params);
+       LEFT JOIN users u ON o.responsavel_id = u.id
+       ${where} ORDER BY o.updated_at DESC NULLS LAST`, params);
 
     const stats = await q(
       `SELECT etapa, COUNT(*)::int as count, COALESCE(SUM(valor),0)::numeric as valor
-       FROM oportunidades WHERE marca_id = $1 GROUP BY etapa`, [marcaId]);
+       FROM pipeline WHERE marca_id = $1 GROUP BY etapa`, [marcaId]);
 
     const [totals] = await q(
       `SELECT COUNT(*)::int as total, COALESCE(SUM(valor),0)::numeric as valor_total
-       FROM oportunidades WHERE marca_id = $1`, [marcaId]);
+       FROM pipeline WHERE marca_id = $1`, [marcaId]);
 
     res.json({ data, stats: { total: totals.total, valor_total: +totals.valor_total, por_etapa: stats } });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2137,16 +2137,16 @@ app.post("/api/oportunidades", requireAuth(async (req, res) => {
     const marcaId = req.user.marca_id;
     if (!marcaId) return res.status(400).json({ error: "marca_id required" });
 
-    const { titulo, cliente_id, vendedor_id, valor, etapa, probabilidade, data_previsao, fonte, notas } = req.body;
+    const { titulo, cliente_id, vendedor_id, responsavel_id, valor, etapa, probabilidade, data_previsao, fonte, notas } = req.body;
     if (!titulo) return res.status(400).json({ error: "titulo required" });
 
-    const vid = vendedor_id || req.user.id;
+    const vid = responsavel_id || vendedor_id || req.user.id;
     const et = etapa || "lead";
 
     const [row] = await q(
-      `INSERT INTO oportunidades (marca_id, cliente_id, vendedor_id, titulo, valor, etapa, probabilidade, data_previsao, fonte, notas)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [marcaId, cliente_id || null, vid, titulo, valor || 0, et, probabilidade || 10, data_previsao || null, fonte || null, notas || null]);
+      `INSERT INTO pipeline (marca_id, cliente_id, responsavel_id, titulo, valor, etapa, probabilidade, data_previsao, notas)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *, responsavel_id as vendedor_id`,
+      [marcaId, cliente_id || null, vid, titulo, valor || 0, et, probabilidade || 10, data_previsao || null, notas || null]);
 
     await logActivity(req, "criou_oportunidade", "oportunidades", row.id, { titulo, etapa: et, valor });
 
@@ -2163,10 +2163,10 @@ app.post("/api/oportunidades", requireAuth(async (req, res) => {
 app.patch("/api/oportunidades/:id", requireAuth(async (req, res) => {
   try {
     const marcaId = req.user.marca_id;
-    const [existing] = await q("SELECT * FROM oportunidades WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId]);
+    const [existing] = await q("SELECT *, responsavel_id as vendedor_id FROM pipeline WHERE id = $1 AND marca_id = $2", [req.params.id, marcaId]);
     if (!existing) return res.status(404).json({ error: "Not found" });
 
-    const allowed = ["titulo","cliente_id","vendedor_id","valor","etapa","probabilidade","data_previsao","motivo_perda","fonte","notas"];
+    const allowed = ["titulo","cliente_id","responsavel_id","valor","etapa","probabilidade","data_previsao","notas"];
     const changes = {};
     for (const k of allowed) { if (req.body[k] !== undefined) changes[k] = req.body[k]; }
 
@@ -2180,7 +2180,7 @@ app.patch("/api/oportunidades/:id", requireAuth(async (req, res) => {
     const vals = Object.values(changes);
 
     const [updated] = await q(
-      `UPDATE oportunidades SET ${sets.join(", ")}, updated_at = now() WHERE id = $1 AND marca_id = $2 RETURNING *`,
+      `UPDATE pipeline SET ${sets.join(", ")}, updated_at = now() WHERE id = $1 AND marca_id = $2 RETURNING *, responsavel_id as vendedor_id`,
       [req.params.id, marcaId, ...vals]);
 
     const detalhes = { ...changes };
@@ -2204,7 +2204,7 @@ app.delete("/api/oportunidades/:id", requireAuth(async (req, res) => {
   try {
     if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
     const marcaId = req.user.marca_id;
-    const [row] = await q("DELETE FROM oportunidades WHERE id = $1 AND marca_id = $2 RETURNING *", [req.params.id, marcaId]);
+    const [row] = await q("DELETE FROM pipeline WHERE id = $1 AND marca_id = $2 RETURNING *", [req.params.id, marcaId]);
     if (!row) return res.status(404).json({ error: "Not found" });
     await logActivity(req, "deletou_oportunidade", "oportunidades", req.params.id, { titulo: row.titulo });
     res.json({ ok: true });

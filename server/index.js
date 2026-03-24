@@ -61,6 +61,39 @@ app.post("/api/auth/login", async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Esqueci minha senha ─────────────────────────────────────────────────────
+app.post("/api/auth/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email obrigatório" });
+    const users = await q("SELECT id, nome, email FROM users WHERE email = $1 AND status = 'ativo'", [email.trim().toLowerCase()]);
+    // Sempre retorna sucesso (segurança — não revela se email existe)
+    if (!users.length) return res.json({ ok: true, message: "Se o email estiver cadastrado, enviaremos um link de redefinição." });
+    const user = users[0];
+    const resetToken = genToken();
+    const expires = new Date(Date.now() + 2 * 3600 * 1000); // 2 horas
+    await q("CREATE TABLE IF NOT EXISTS password_resets (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL, token TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, used BOOLEAN DEFAULT false, created_at TIMESTAMPTZ DEFAULT now())");
+    await q("INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)", [user.id, resetToken, expires]);
+    // TODO: enviar email com link. Por enquanto, retorna o token pra teste
+    console.log(`[Reset] Token para ${user.email}: ${resetToken}`);
+    res.json({ ok: true, message: "Se o email estiver cadastrado, enviaremos um link de redefinição.", _debug_token: process.env.NODE_ENV !== "production" ? resetToken : undefined });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: "Token e nova senha são obrigatórios" });
+    if (password.length < 6) return res.status(400).json({ error: "Senha deve ter no mínimo 6 caracteres" });
+    const resets = await q("SELECT * FROM password_resets WHERE token = $1 AND used = false AND expires_at > now()", [token]);
+    if (!resets.length) return res.status(400).json({ error: "Token inválido ou expirado. Solicite um novo link." });
+    const reset = resets[0];
+    await q("UPDATE users SET password_hash = crypt($1, gen_salt('bf')) WHERE id = $2", [password, reset.user_id]);
+    await q("UPDATE password_resets SET used = true WHERE id = $1", [reset.id]);
+    res.json({ ok: true, message: "Senha redefinida com sucesso! Faça login com a nova senha." });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get("/api/auth/me", requireAuth(async (req, res) => {
   const u = req.user;
   let marca = null;
@@ -168,8 +201,8 @@ app.get("/api/stats", requireAuth(async (req, res) => {
   // Agenda stats (hoje)
   const today = new Date().toISOString().slice(0,10);
   const agendaW = marcaId ? "WHERE marca_id = $1" : "";
-  const agPendentes = await q(`SELECT COUNT(*) as n FROM agenda ${agendaW ? agendaW + ` AND status = 'pendente' AND data_inicio::date = '${today}'` : `WHERE status = 'pendente' AND data_inicio::date = '${today}'`}`, p);
-  const agAtrasados = await q(`SELECT COUNT(*) as n FROM agenda ${agendaW ? agendaW + ` AND status = 'pendente' AND data_inicio < now()` : `WHERE status = 'pendente' AND data_inicio < now()`}`, p);
+  const agPendentes = await q(`SELECT COUNT(*) as n FROM agenda ${agendaW ? agendaW + ` AND status IN ('pendente','agendado') AND data_inicio::date = '${today}'` : `WHERE status IN ('pendente','agendado') AND data_inicio::date = '${today}'`}`, p);
+  const agAtrasados = await q(`SELECT COUNT(*) as n FROM agenda ${agendaW ? agendaW + ` AND status IN ('pendente','agendado') AND data_inicio < now()` : `WHERE status IN ('pendente','agendado') AND data_inicio < now()`}`, p);
 
   // Tarefas pendentes
   const tarW = marcaId ? "WHERE marca_id = $1 AND concluida = false" : "WHERE concluida = false";

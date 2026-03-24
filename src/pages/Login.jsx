@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useToast } from "../context/ToastContext";
 import { MinerLogo } from "../components/UI";
-import { login as apiLogin, googleLogin as apiGoogleLogin, register as apiRegister } from "../lib/api";
+import { login as apiLogin, googleLogin as apiGoogleLogin, register as apiRegister, forgotPassword, resetPassword } from "../lib/api";
 
 const STYLES_IMPORT = null; // CSS is now in global.css
 
 function Login({ onLogin }) {
   const toast = useToast();
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState("login"); // "login" | "register" | "forgot" | "reset"
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
@@ -16,6 +16,11 @@ function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [shake, setShake] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNew, setConfirmNew] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const pwdRef = useRef(null);
 
   const clearErro = () => { if (erro) setErro(""); };
@@ -60,6 +65,47 @@ function Login({ onLogin }) {
     }
     setShake(true); setTimeout(() => setShake(false), 450);
     setLoading(false);
+  };
+
+  const handleForgot = async () => {
+    if (!email.trim()) { setErro("Digite seu email."); return; }
+    setLoading(true); setErro("");
+    try {
+      await forgotPassword(email.trim());
+      setForgotSent(true);
+      toast("Link de redefinição enviado!", "success");
+    } catch (e) { setErro(e.message || "Erro ao enviar."); }
+    setLoading(false);
+  };
+
+  const handleReset = async () => {
+    if (!resetToken.trim()) { setErro("Cole o código de redefinição."); return; }
+    if (newPassword.length < 6) { setErro("Senha deve ter no mínimo 6 caracteres."); return; }
+    if (newPassword !== confirmNew) { setErro("As senhas não coincidem."); return; }
+    setLoading(true); setErro("");
+    try {
+      const r = await resetPassword(resetToken.trim(), newPassword);
+      if (r.ok) {
+        setSuccessMsg("Senha redefinida com sucesso! Faça login.");
+        setTimeout(() => { setMode("login"); setSuccessMsg(""); setForgotSent(false); setResetToken(""); setNewPassword(""); setConfirmNew(""); }, 3000);
+      }
+    } catch (e) { setErro(e.message || "Token inválido ou expirado."); }
+    setLoading(false);
+  };
+
+  // Password strength
+  const getPasswordStrength = (pwd) => {
+    if (!pwd) return { level: 0, label: "", color: "#ddd" };
+    let score = 0;
+    if (pwd.length >= 6) score++;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+    if (score <= 1) return { level: 1, label: "Fraca", color: "#ff3b30" };
+    if (score <= 2) return { level: 2, label: "Razoável", color: "#ff9500" };
+    if (score <= 3) return { level: 3, label: "Boa", color: "#28cd41" };
+    return { level: 4, label: "Forte", color: "#007aff" };
   };
 
   // Google Sign-In
@@ -143,7 +189,7 @@ function Login({ onLogin }) {
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.5px" }}>Senha</label>
-              <button onClick={() => {}} style={{ background: "none", border: "none", fontSize: 12, color: "#4545F5", cursor: "pointer", fontWeight: 500, fontFamily: "var(--sf)" }}>Esqueci a senha</button>
+              <button onClick={() => { setMode("forgot"); setErro(""); setForgotSent(false); setSuccessMsg(""); }} style={{ background: "none", border: "none", fontSize: 12, color: "#4545F5", cursor: "pointer", fontWeight: 500, fontFamily: "var(--sf)" }}>Esqueci a senha</button>
             </div>
             <div style={{ position: "relative" }}>
               <input ref={pwdRef} className="ap-inp" type={showPwd ? "text" : "password"} placeholder="••••••••" value={senha} onChange={(e) => chSenha(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }} style={{ paddingRight: 44 }} />
@@ -196,6 +242,12 @@ function Login({ onLogin }) {
               <input className="ap-inp" type={showPwd ? "text" : "password"} placeholder="Mínimo 6 caracteres" value={senha} onChange={(e) => chSenha(e.target.value)} style={{ paddingRight: 44 }} />
               <button type="button" onClick={() => setShowPwd(!showPwd)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, color: "#6e6e73", lineHeight: 1 }} tabIndex={-1}>{showPwd ? "👁" : "👁‍🗨"}</button>
             </div>
+            {senha && (() => { const s = getPasswordStrength(senha); return (
+              <div style={{ marginTop: 6, display: "flex", gap: 4, alignItems: "center" }}>
+                {[1,2,3,4].map(i => <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i <= s.level ? s.color : "#e5e5ea", transition: "all 0.3s" }} />)}
+                <span style={{ fontSize: 11, color: s.color, fontWeight: 600, marginLeft: 8 }}>{s.label}</span>
+              </div>
+            ); })()}
             <div style={{ height: 14 }} />
 
             <label style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 }}>Confirmar senha</label>
@@ -206,6 +258,53 @@ function Login({ onLogin }) {
               {loading ? "⏳ Cadastrando..." : "Criar conta →"}
             </button>
           </>
+        )}
+
+        {/* Forgot password */}
+        {mode === "forgot" && (
+          <>
+            <h2 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.03em", textAlign: "center", color: "#1d1d1f" }}>Esqueceu a senha?</h2>
+            <p style={{ fontSize: 14, color: "#6e6e73", textAlign: "center", marginBottom: 32, marginTop: 6 }}>
+              {forgotSent ? "Verifique seu email para o link de redefinição." : "Digite seu email e enviaremos um link para redefinir."}
+            </p>
+            {!forgotSent ? (
+              <>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 }}>Email</label>
+                <input className="ap-inp" type="email" placeholder="seu@email.com" autoFocus value={email} onChange={(e) => chEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleForgot(); }} />
+                <div style={{ height: 20 }} />
+                <button className="ap-btn ap-btn-primary" disabled={loading} onClick={handleForgot} style={{ width: "100%", padding: "14px 0", borderRadius: 14, fontSize: 15, fontWeight: 700 }}>
+                  {loading ? "Enviando..." : "Enviar link de redefinição"}
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ background: "#e9fbed", border: "1px solid #28cd4133", borderRadius: 12, padding: 16, textAlign: "center", marginBottom: 16 }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>✉️</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#1a7f2b" }}>Email enviado!</div>
+                  <div style={{ fontSize: 12, color: "#6e6e73", marginTop: 4 }}>Verifique sua caixa de entrada e spam.</div>
+                </div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 }}>Código de redefinição</label>
+                <input className="ap-inp" placeholder="Cole o código recebido" value={resetToken} onChange={(e) => setResetToken(e.target.value)} />
+                <div style={{ height: 12 }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 }}>Nova senha</label>
+                <input className="ap-inp" type="password" placeholder="Mínimo 6 caracteres" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                <div style={{ height: 12 }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 }}>Confirmar nova senha</label>
+                <input className="ap-inp" type="password" placeholder="Repita a nova senha" value={confirmNew} onChange={(e) => setConfirmNew(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleReset(); }} />
+                <div style={{ height: 20 }} />
+                <button className="ap-btn ap-btn-primary" disabled={loading} onClick={handleReset} style={{ width: "100%", padding: "14px 0", borderRadius: 14, fontSize: 15, fontWeight: 700 }}>
+                  {loading ? "Redefinindo..." : "Redefinir senha"}
+                </button>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Success message */}
+        {successMsg && (
+          <div className="fade-in" style={{ marginTop: 14, background: "#e9fbed", border: "1px solid #28cd4133", borderRadius: 12, padding: "10px 16px", fontSize: 13, color: "#1a7f2b", fontWeight: 600, textAlign: "center" }}>
+            {successMsg}
+          </div>
         )}
 
         {/* Error message */}
@@ -220,8 +319,10 @@ function Login({ onLogin }) {
         <p style={{ fontSize: 13, color: "#6e6e73", textAlign: "center" }}>
           {mode === "login" ? (
             <>Não tem conta?{" "}<button onClick={() => { setMode("register"); setErro(""); setLoading(false); }} style={{ background: "none", border: "none", color: "#4545F5", cursor: "pointer", fontWeight: 600, fontSize: 13, fontFamily: "var(--sf)" }}>Cadastre-se</button></>
-          ) : (
+          ) : mode === "register" ? (
             <>Já tem conta?{" "}<button onClick={() => { setMode("login"); setErro(""); setLoading(false); }} style={{ background: "none", border: "none", color: "#4545F5", cursor: "pointer", fontWeight: 600, fontSize: 13, fontFamily: "var(--sf)" }}>Faça login</button></>
+          ) : (
+            <><button onClick={() => { setMode("login"); setErro(""); setLoading(false); setForgotSent(false); setSuccessMsg(""); }} style={{ background: "none", border: "none", color: "#4545F5", cursor: "pointer", fontWeight: 600, fontSize: 13, fontFamily: "var(--sf)" }}>← Voltar ao login</button></>
           )}
         </p>
 

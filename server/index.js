@@ -1292,6 +1292,45 @@ app.post("/api/campanhas-sugeridas/gerar", requireAuth(async (req, res) => {
   res.json({ data: rows });
 }));
 
+// ── Auto-setup: cria automações e segmentos quando integração conecta ────────
+async function autoSetupMarca(marcaId) {
+  try {
+    // Automações padrão (só cria se não existir)
+    const [existingAuto] = await q("SELECT COUNT(*) as n FROM automacoes WHERE marca_id=$1", [marcaId]);
+    if (+existingAuto.n === 0) {
+      const autos = [
+        { nome: 'Boas-vindas', tipo: 'boas_vindas', gatilho: '{"tipo":"novo_cliente"}', acao: '{"tipo":"enviar_mensagem"}', canal: 'whatsapp', template: 'Olá {nome}! Bem-vinda à nossa loja! Estamos felizes em ter você.' },
+        { nome: 'Pós-venda (3 dias)', tipo: 'pos_venda', gatilho: '{"tipo":"pedido_aprovado","dias":3}', acao: '{"tipo":"enviar_mensagem"}', canal: 'whatsapp', template: 'Oi {nome}! Queria saber se gostou da compra! Qualquer dúvida, estou aqui.' },
+        { nome: 'Reativação 60 dias', tipo: 'reativacao', gatilho: '{"tipo":"cliente_inativo","dias":60}', acao: '{"tipo":"enviar_mensagem"}', canal: 'whatsapp', template: 'Oi {nome}! Faz tempo! Temos novidades incríveis pra você.' },
+        { nome: 'Aniversário', tipo: 'aniversario', gatilho: '{"tipo":"data_nascimento"}', acao: '{"tipo":"enviar_mensagem"}', canal: 'whatsapp', template: 'Parabéns {nome}! Preparamos 15% OFF pra você!' },
+        { nome: 'Carrinho abandonado', tipo: 'carrinho', gatilho: '{"tipo":"carrinho_abandonado"}', acao: '{"tipo":"enviar_mensagem"}', canal: 'whatsapp', template: 'Oi {nome}! Vi que deixou produtos no carrinho. Posso ajudar?' },
+      ];
+      for (const a of autos) {
+        await q("INSERT INTO automacoes (marca_id,nome,tipo,gatilho,acao,canal,template,ativo) VALUES ($1,$2,$3,$4,$5,$6,$7,true)",
+          [marcaId, a.nome, a.tipo, a.gatilho, a.acao, a.canal, a.template]);
+      }
+    }
+
+    // Pipeline automático: top 50 clientes com receita > 200
+    const [existingPipe] = await q("SELECT COUNT(*) as n FROM pipeline WHERE marca_id=$1", [marcaId]);
+    if (+existingPipe.n === 0) {
+      await q(`INSERT INTO pipeline (marca_id,cliente_id,titulo,valor,etapa,probabilidade,responsavel_id,data_previsao)
+        SELECT $1, c.id, 'Recompra — ' || c.nome, ROUND(c.receita_total*0.5,2),
+          CASE WHEN c.segmento_rfm='campiao' THEN 'negociacao' WHEN c.segmento_rfm='fiel' THEN 'proposta'
+               WHEN c.segmento_rfm='potencial' THEN 'qualificado' ELSE 'contato' END,
+          CASE WHEN c.segmento_rfm='campiao' THEN 90 WHEN c.segmento_rfm='fiel' THEN 70
+               WHEN c.segmento_rfm='potencial' THEN 50 ELSE 30 END,
+          c.vendedor_id, (CURRENT_DATE + 30)::date
+        FROM clientes c WHERE c.marca_id=$1 AND c.receita_total > 200
+          AND c.segmento_rfm IN ('campiao','fiel','potencial','em_risco') AND c.vendedor_id IS NOT NULL
+        ORDER BY c.receita_total DESC LIMIT 50`, [marcaId]);
+    }
+
+    // Campanhas sugeridas
+    await gerarCampanhasSugeridas(marcaId);
+  } catch (e) { console.error("Auto-setup erro:", e.message); }
+}
+
 // ── Conexão Self-Service (admin conecta sozinho, sem dev) ────────────────────
 app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
   if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
@@ -1321,7 +1360,9 @@ app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
         await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'shopify',$2,$3,'conectado')",
           [marcaId, `Shopify — ${shop.name}`, JSON.stringify({ store: shopUrl, token, shop_name: shop.name })]);
       }
-      return res.json({ ok: true, message: `Conectado com sucesso à loja "${shop.name}"!`, shop: { name: shop.name, domain: shop.domain } });
+      // Auto-setup: cria automações, pipeline e campanhas
+      autoSetupMarca(marcaId).catch(() => {});
+      return res.json({ ok: true, message: `Conectado com sucesso à loja "${shop.name}"! Automações e pipeline criados automaticamente.`, shop: { name: shop.name, domain: shop.domain } });
     }
 
     if (tipo === "bling") {
@@ -1337,7 +1378,8 @@ app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
         await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'bling','Bling ERP',$2,'conectado')",
           [marcaId, JSON.stringify({ api_key })]);
       }
-      return res.json({ ok: true, message: "Conectado ao Bling com sucesso!" });
+      autoSetupMarca(marcaId).catch(() => {});
+      return res.json({ ok: true, message: "Conectado ao Bling! Automações criadas automaticamente." });
     }
 
     if (tipo === "olist") {
@@ -1351,7 +1393,8 @@ app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
         await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'olist','Olist',$2,'conectado')",
           [marcaId, JSON.stringify({ seller_id, api_key })]);
       }
-      return res.json({ ok: true, message: "Conectado ao Olist!" });
+      autoSetupMarca(marcaId).catch(() => {});
+      return res.json({ ok: true, message: "Conectado ao Olist! Automações criadas automaticamente." });
     }
 
     if (tipo === "pagarme") {
@@ -1365,7 +1408,8 @@ app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
         await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'pagarme','Pagar.me',$2,'conectado')",
           [marcaId, JSON.stringify({ api_key })]);
       }
-      return res.json({ ok: true, message: "Conectado ao Pagar.me!" });
+      autoSetupMarca(marcaId).catch(() => {});
+      return res.json({ ok: true, message: "Conectado ao Pagar.me! Automações criadas automaticamente." });
     }
 
     if (tipo === "suri") {
@@ -1379,7 +1423,8 @@ app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
         await q("INSERT INTO integracoes (marca_id, tipo, nome, config, status) VALUES ($1,'suri','Suri',$2,'conectado')",
           [marcaId, JSON.stringify({ api_url, token })]);
       }
-      return res.json({ ok: true, message: "Conectado à Suri!" });
+      autoSetupMarca(marcaId).catch(() => {});
+      return res.json({ ok: true, message: "Conectado à Suri! Automações criadas automaticamente." });
     }
 
     return res.status(400).json({ error: `Tipo "${tipo}" não suportado. Use: shopify, bling, olist, pagarme, suri` });

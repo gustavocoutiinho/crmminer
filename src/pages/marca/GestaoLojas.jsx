@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { T } from "../../lib/theme";
 import { Avatar, Modal, Chip } from "../../components/UI";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
+import { fetchData, createRecord, updateRecord, deleteRecord } from "../../lib/api";
 
 export default function GestaoLojas({ user, setPage }) {
   const [lojas, setLojas] = useState([]);
@@ -13,11 +14,18 @@ export default function GestaoLojas({ user, setPage }) {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ nome: "", cidade: "", estado: "", gerente_id: "", status: "ativo" });
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
-    setLojas([]);
-    setUsuarios([]);
-    setClientes([]);
+    try {
+      const [lj, us, cl] = await Promise.all([
+        fetchData("lojas", { limit: 200 }),
+        fetchData("users", { limit: 200 }),
+        fetchData("clientes", { limit: 5000 }),
+      ]);
+      setLojas(lj.data || []);
+      setUsuarios(us.data || []);
+      setClientes(cl.data || []);
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 

@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader, Toggle, Modal, FormRow, Lbl } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
+import { fetchData } from "../../lib/api";
 
 function Fidelidade({ user }) {
   const toast = useToast();
@@ -27,8 +28,20 @@ function Fidelidade({ user }) {
   const [editForm, setEditForm] = useState(config);
   const [showRanking, setShowRanking] = useState(false);
 
-  const fidClientes = useMemo(() => [], []);
-  const clientes = useMemo(() => [], [marcaId]);
+  const [fidClientes, setFidClientes] = useState([]);
+  const [clientes, setClientes] = useState([]);
+
+  useEffect(() => {
+    fetchData("clientes", { limit: 5000 }).then(r => {
+      const data = r.data || [];
+      setClientes(data);
+      setFidClientes(data.filter(c => c.total_pedidos > 0).map(c => ({
+        ...c,
+        pontos: Math.floor((c.receita_total || 0) * (config.pontos_por_real || 1)),
+        indicacoes: 0,
+      })));
+    }).catch(() => {});
+  }, [marcaId]);
 
   const totalPontos = fidClientes.reduce((s, f) => s + (f.pontos || 0), 0);
   const totalIndicacoes = fidClientes.reduce((s, f) => s + (f.indicacoes || 0), 0);

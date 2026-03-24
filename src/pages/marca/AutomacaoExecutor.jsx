@@ -1,37 +1,46 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { T } from "../../lib/theme";
 import { Chip, KpiCard, SectionHeader, Toggle } from "../../components/UI";
 import { useToast } from "../../context/ToastContext";
 import useAutomationEngine from "../../hooks/useAutomationEngine";
+import { fetchData } from "../../lib/api";
 
 function AutomacaoExecutor({ user }) {
   const toast = useToast();
   const marcaId = user?.marca_id || user?.marcaId || "demo";
   const [autoExec, setAutoExec] = useState({});
 
+  const [rawAutomacoes, setRawAutomacoes] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [execucoesData, setExecucoesData] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetchData("automacoes", { limit: 200 }),
+      fetchData("clientes", { limit: 5000 }),
+      fetchData("automacao_execucoes", { limit: 500 }),
+    ]).then(([a, c, e]) => {
+      setRawAutomacoes(a.data || []);
+      setClientes(c.data || []);
+      setExecucoesData(e.data || []);
+    }).catch(() => {});
+  }, [marcaId]);
+
   const automacoes = useMemo(() => {
-    const camps = [];
-    return camps.map((c, i) => ({
+    return rawAutomacoes.map((c, i) => ({
       id: c.id || `auto_${i}`,
       nome: c.nome,
-      tipo: c.tipo === "whatsapp" ? "reativacao" : c.tipo === "email" ? "pos_venda" : "novo_cliente",
+      tipo: c.tipo || "reativacao",
       canal: c.canal?.toLowerCase() || "whatsapp",
-      ativo: c.status === "ativa",
-      template: `Olá {nome}, ${c.nome}`,
-      prioridade: c.prioridade || 5,
-      execucoes: c.enviados || 0,
-      conversoes: Math.round((c.receita || 0) / 350),
+      ativo: c.ativo !== false,
+      template: c.template || `Olá {nome}`,
+      prioridade: 5,
+      execucoes: execucoesData.filter(e => e.automacao_id === c.id).length,
+      conversoes: 0,
     }));
-  }, []);
+  }, [rawAutomacoes, execucoesData]);
 
-  const clientes = useMemo(
-    () => [],
-    [marcaId]
-  );
-
-  const execucoesMock = useMemo(() => [], []);
-
-  const engine = useAutomationEngine({ automacoes, clientes, execucoes: execucoesMock });
+  const engine = useAutomationEngine({ automacoes, clientes, execucoes: execucoesData });
 
   const hoje = new Date().toISOString().slice(0, 10);
   const execHoje = engine.todasExecucoes.filter((e) => (e.created_at || "").slice(0, 10) === hoje);

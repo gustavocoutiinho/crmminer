@@ -20,6 +20,9 @@ function MarcaAutomacoes({ user }) {
   const [execucoes, setExecucoes] = useState([]);
   const [execLoading, setExecLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [searchAuto, setSearchAuto] = useState("");
+  const [filterTipo, setFilterTipo] = useState("");
+  const [filterAtivo, setFilterAtivo] = useState("");
 
   const load = async () => {
     try {
@@ -287,10 +290,29 @@ function MarcaAutomacoes({ user }) {
 
       {/* View: Automacoes */}
       {view === "automacoes" && <>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+          <input className="ap-inp" placeholder="Buscar..." style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "6px 12px" }} value={searchAuto} onChange={e => setSearchAuto(e.target.value)} />
+          <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 140 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+            <option value="">Todos os tipos</option>
+            {Object.entries(TIPO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+          <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 120 }} value={filterAtivo} onChange={e => setFilterAtivo(e.target.value)}>
+            <option value="">Todos os status</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+          </select>
+        </div>
         {loading && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Carregando automa\u00E7\u00F5es...</div>}
         {!loading && automacoes.length === 0 && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Nenhuma automa\u00E7\u00E3o configurada. Crie a primeira!</div>}
 
-        {automacoes.map((a) => {
+        {automacoes.filter(a => {
+          const s = searchAuto.toLowerCase();
+          if (s && !(a.nome || "").toLowerCase().includes(s)) return false;
+          if (filterTipo && a.tipo !== filterTipo) return false;
+          if (filterAtivo === "ativo" && !a.ativo) return false;
+          if (filterAtivo === "inativo" && a.ativo) return false;
+          return true;
+        }).map((a) => {
           const tipoKey = a.tipo || "custom";
           const canalKey = (a.canal || "email").toLowerCase();
           return (

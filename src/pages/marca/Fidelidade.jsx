@@ -27,6 +27,8 @@ function Fidelidade({ user }) {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(config);
   const [showRanking, setShowRanking] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterNivel, setFilterNivel] = useState("");
 
   const [fidClientes, setFidClientes] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -137,12 +139,24 @@ function Fidelidade({ user }) {
       </div>
 
       {/* Ranking de clientes */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <input className="ap-inp" placeholder="Buscar..." style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "6px 12px" }} value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 130 }} value={filterNivel} onChange={e => setFilterNivel(e.target.value)}>
+          <option value="">Todos os níveis</option>
+          {(config.niveis || []).map(n => <option key={n.nome} value={n.nome}>{n.icone} {n.nome}</option>)}
+        </select>
+      </div>
       <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 14, fontWeight: 700 }}>🏆 Ranking de Pontos</span>
           <span style={{ fontSize: 12, color: T.muted }}>{clienteRanking.length} clientes</span>
         </div>
-        {clienteRanking.map((cl, i) => {
+        {clienteRanking.filter(cl => {
+          const s = search.toLowerCase();
+          if (s && !(cl.nome || "").toLowerCase().includes(s) && !(cl.email || "").toLowerCase().includes(s)) return false;
+          if (filterNivel && cl.nivel !== filterNivel) return false;
+          return true;
+        }).map((cl, i) => {
           const nivelCfg = (config.niveis || []).find((n) => n.nome === cl.nivel);
           const nextNivel = (config.niveis || []).find((n) => n.min > cl.pontos);
           const progressToNext = nextNivel ? Math.round(((cl.pontos - (nivelCfg?.min || 0)) / (nextNivel.min - (nivelCfg?.min || 0))) * 100) : 100;

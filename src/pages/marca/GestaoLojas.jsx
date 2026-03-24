@@ -10,6 +10,8 @@ export default function GestaoLojas({ user, setPage }) {
   const [clientes, setClientes] = useState([]);
   
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ nome: "", cidade: "", estado: "", gerente_id: "", status: "ativo" });
@@ -95,9 +97,23 @@ export default function GestaoLojas({ user, setPage }) {
         <button className="ap-btn ap-btn-primary" onClick={openCreate} style={{ padding: "8px 20px" }}>+ Adicionar Loja</button>
       </div>
 
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <input className="ap-inp" placeholder="Buscar..." style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "6px 12px" }} value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 120 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativa</option>
+          <option value="inativo">Inativa</option>
+        </select>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {dataLojas.map(loja => (
+          {dataLojas.filter(loja => {
+            const s = search.toLowerCase();
+            if (s && !(loja.nome || "").toLowerCase().includes(s) && !(loja.cidade || "").toLowerCase().includes(s)) return false;
+            if (filterStatus && (loja.status || "ativo") !== filterStatus) return false;
+            return true;
+          }).map(loja => (
             <div key={loja.id} className="ap-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>

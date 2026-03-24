@@ -202,7 +202,7 @@ app.post("/api/clientes/:id/timeline", requireAuth(async (req, res) => {
 }));
 
 // ── Generic CRUD ─────────────────────────────────────────────────────────────
-const TABLES = ["clientes","pedidos","campanhas","tarefas","timeline","mensagens","conexoes_externas","marcas","automacoes","automacao_execucoes","users"];
+const TABLES = ["clientes","pedidos","campanhas","tarefas","timeline","mensagens","conexoes_externas","marcas","automacoes","automacao_execucoes","users","fidelidade","pipeline","segmentos","agenda","qrcodes","indicacoes","respostas_rapidas","metas","lojas","tags","inbox","permissoes","campanhas_sugeridas","integracoes","activity_log","notificacoes","sync_logs","templates_mensagem"];
 
 // GET list
 app.get("/api/data/:table", requireAuth(async (req, res) => {
@@ -1153,6 +1153,119 @@ app.post("/api/automacoes/:id/duplicate", requireAuth(async (req, res) => {
   res.json({ data: dup });
 }));
 
+// ── Auto-gerar 10 campanhas sugeridas baseado nos dados ──────────────────────
+async function gerarCampanhasSugeridas(marcaId) {
+  try {
+    // Verificar se já tem campanhas sugeridas
+    const [{ count }] = await q("SELECT COUNT(*) as count FROM campanhas_sugeridas WHERE marca_id=$1", [marcaId]);
+    if (+count >= 10) return; // Já tem campanhas
+
+    // Coletar métricas
+    const [{ total_cli }] = await q("SELECT COUNT(*) as total_cli FROM clientes WHERE marca_id=$1", [marcaId]);
+    const [{ aniv_count }] = await q("SELECT COUNT(*) as aniv_count FROM clientes WHERE marca_id=$1 AND data_nascimento IS NOT NULL", [marcaId]);
+    const [{ inativos }] = await q("SELECT COUNT(*) as inativos FROM clientes WHERE marca_id=$1 AND recencia_dias > 90", [marcaId]);
+    const [{ novos_30d }] = await q("SELECT COUNT(*) as novos_30d FROM clientes WHERE marca_id=$1 AND created_at > now() - interval '30 days'", [marcaId]);
+    const [{ vip_count }] = await q("SELECT COUNT(*) as vip_count FROM clientes WHERE marca_id=$1 AND total_pedidos >= 3", [marcaId]);
+    const [{ ticket_medio }] = await q("SELECT COALESCE(AVG(valor),0) as ticket_medio FROM pedidos WHERE marca_id=$1 AND status='aprovado'", [marcaId]);
+
+    const hoje = new Date();
+    const proxMes = new Date(hoje); proxMes.setMonth(proxMes.getMonth() + 1);
+    const fmt = d => d.toISOString().split("T")[0];
+
+    const campanhas = [
+      {
+        titulo: "Aniversariantes do Mês",
+        descricao: `${+aniv_count} clientes com aniversário cadastrado. Envie cupom especial de aniversário para aumentar recompra.`,
+        tipo: "aniversario", gatilho: "Data de nascimento do cliente", canal: "whatsapp",
+        data_sugerida: fmt(hoje), recorrencia: "mensal", prioridade: 10
+      },
+      {
+        titulo: "Reativação de Inativos",
+        descricao: `${+inativos} clientes sem compra há mais de 90 dias. Ofereça desconto exclusivo para trazer de volta.`,
+        tipo: "reativacao", gatilho: "Cliente sem compra > 90 dias", canal: "whatsapp",
+        data_sugerida: fmt(hoje), recorrencia: "semanal", prioridade: 9
+      },
+      {
+        titulo: "Boas-vindas — Novo Cliente",
+        descricao: `${+novos_30d} novos clientes no último mês. Envie mensagem de boas-vindas automática após primeira compra.`,
+        tipo: "boas_vindas", gatilho: "Primeira compra realizada", canal: "whatsapp",
+        data_sugerida: fmt(hoje), recorrencia: "diario", prioridade: 9
+      },
+      {
+        titulo: "Pós-venda (7 dias)",
+        descricao: "Pergunte se o cliente recebeu o pedido e está satisfeito. Aumenta NPS e fidelização.",
+        tipo: "pos_venda", gatilho: "7 dias após compra aprovada", canal: "whatsapp",
+        data_sugerida: fmt(hoje), recorrencia: "diario", prioridade: 8
+      },
+      {
+        titulo: "Clientes VIP — Acesso Exclusivo",
+        descricao: `${+vip_count} clientes com 3+ compras. Ofereça acesso antecipado a lançamentos ou promoções exclusivas.`,
+        tipo: "fidelidade", gatilho: "Cliente com 3+ pedidos", canal: "whatsapp",
+        data_sugerida: fmt(proxMes), recorrencia: "mensal", prioridade: 8
+      },
+      {
+        titulo: "Carrinho Abandonado",
+        descricao: "Recupere vendas perdidas. Envie lembrete automático 2h após abandono de carrinho no site.",
+        tipo: "carrinho", gatilho: "Checkout abandonado", canal: "whatsapp",
+        data_sugerida: fmt(hoje), recorrencia: "diario", prioridade: 7
+      },
+      {
+        titulo: "Feedback pós-compra",
+        descricao: "Peça avaliação do produto 15 dias após entrega. Gera prova social e identifica problemas.",
+        tipo: "feedback", gatilho: "15 dias após entrega", canal: "email",
+        data_sugerida: fmt(hoje), recorrencia: "diario", prioridade: 7
+      },
+      {
+        titulo: "Upsell — Ticket Médio",
+        descricao: `Ticket médio atual: R$ ${(+ticket_medio).toFixed(0)}. Sugira produtos complementares para quem comprou recentemente.`,
+        tipo: "upsell", gatilho: "Compra realizada com valor abaixo da média", canal: "email",
+        data_sugerida: fmt(proxMes), recorrencia: "semanal", prioridade: 6
+      },
+      {
+        titulo: "Programa de Indicação",
+        descricao: "Clientes satisfeitos indicam amigos. Ofereça desconto para quem indicar + para o indicado.",
+        tipo: "fidelidade", gatilho: "Cliente com 2+ compras e NPS alto", canal: "whatsapp",
+        data_sugerida: fmt(proxMes), recorrencia: "mensal", prioridade: 6
+      },
+      {
+        titulo: "Recorrência — Recompra programada",
+        descricao: "Para produtos de uso contínuo, lembre o cliente de reabastecer baseado no ciclo médio de recompra.",
+        tipo: "recorrencia", gatilho: "Ciclo médio de recompra atingido", canal: "whatsapp",
+        data_sugerida: fmt(proxMes), recorrencia: "semanal", prioridade: 5
+      }
+    ];
+
+    for (const c of campanhas) {
+      await q(`INSERT INTO campanhas_sugeridas (marca_id,titulo,descricao,tipo,gatilho,canal,data_sugerida,recorrencia,prioridade)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING`,
+        [marcaId,c.titulo,c.descricao,c.tipo,c.gatilho,c.canal,c.data_sugerida,c.recorrencia,c.prioridade]);
+    }
+  } catch(e) { console.error("Erro gerando campanhas:", e.message); }
+}
+
+// ── API Campanhas Sugeridas ──────────────────────────────────────────────────
+app.get("/api/campanhas-sugeridas", requireAuth(async (req, res) => {
+  const marcaId = req.user.marca_id;
+  if (!marcaId) return res.status(400).json({ error: "marca_id required" });
+  const rows = await q("SELECT * FROM campanhas_sugeridas WHERE marca_id=$1 ORDER BY prioridade DESC, created_at", [marcaId]);
+  res.json({ data: rows });
+}));
+
+app.patch("/api/campanhas-sugeridas/:id", requireAuth(async (req, res) => {
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  const { status } = req.body;
+  if (!["aprovada","ativa","pausada","sugerida"].includes(status)) return res.status(400).json({ error: "Status inválido" });
+  const rows = await q("UPDATE campanhas_sugeridas SET status=$1 WHERE id=$2 AND marca_id=$3 RETURNING *", [status, req.params.id, req.user.marca_id]);
+  res.json({ data: rows[0] });
+}));
+
+app.post("/api/campanhas-sugeridas/gerar", requireAuth(async (req, res) => {
+  if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
+  await gerarCampanhasSugeridas(req.user.marca_id);
+  const rows = await q("SELECT * FROM campanhas_sugeridas WHERE marca_id=$1 ORDER BY prioridade DESC", [req.user.marca_id]);
+  res.json({ data: rows });
+}));
+
 // ── Conexão Self-Service (admin conecta sozinho, sem dev) ────────────────────
 app.post("/api/integracoes/connect", requireAuth(async (req, res) => {
   if (!["miner","admin"].includes(req.user.role)) return res.status(403).json({ error: "Sem permissão" });
@@ -1275,8 +1388,8 @@ app.post("/api/integracoes/:id/sync", requireAuth(async (req, res) => {
         if (!r.ok) throw new Error(`Shopify ${r.status}`);
         return r.json();
       };
-      let cN=0,cU=0,pN=0,pU=0,erros=0;
-      // Customers
+      let cN=0,cU=0,pN=0,pU=0,erros=0,aniversarios=0;
+      // Customers — com dados completos
       let sinceId = 0;
       for (let pg = 0; pg < 5; pg++) {
         if (Date.now() - startTime > TIMEOUT_LIMIT) break;
@@ -1285,14 +1398,37 @@ app.post("/api/integracoes/:id/sync", requireAuth(async (req, res) => {
         if (!custs.length) break;
         for (const c of custs) {
           try {
-            if (!c.orders_count) continue;
             const nome = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email?.split("@")[0] || "Sem nome";
             const recDias = c.last_order_date ? Math.floor((Date.now() - new Date(c.last_order_date)) / 86400000) : 999;
-            const r = await q(`INSERT INTO clientes (marca_id,shopify_id,nome,email,telefone,recencia_dias,total_pedidos,receita_total,created_at)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (marca_id,shopify_id) WHERE shopify_id IS NOT NULL DO UPDATE SET
-              nome=EXCLUDED.nome,email=EXCLUDED.email,telefone=EXCLUDED.telefone,recencia_dias=EXCLUDED.recencia_dias,
-              total_pedidos=EXCLUDED.total_pedidos,receita_total=EXCLUDED.receita_total,updated_at=now() RETURNING (xmax=0) AS is_new`,
-              [mId,c.id,nome,c.email,c.phone,recDias,c.orders_count||0,parseFloat(c.total_spent)||0,c.created_at]);
+            const addr = c.default_address || c.addresses?.[0] || {};
+            const cidade = addr.city || null;
+            const estado = addr.province_code || addr.province || null;
+            const endereco = [addr.address1, addr.address2].filter(Boolean).join(", ") || null;
+            const telefone = c.phone || addr.phone || null;
+            // Extrair aniversário das tags ou metafields
+            let dataNasc = null;
+            if (c.note) {
+              const m = c.note.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+              if (m) dataNasc = `${m[3]}-${m[2]}-${m[1]}`;
+            }
+            if (!dataNasc && c.tags) {
+              const m = c.tags.match(/aniv[:\s]*(\d{2})\/(\d{2})/i);
+              if (m) dataNasc = `2000-${m[2]}-${m[1]}`;
+            }
+            if (dataNasc) aniversarios++;
+
+            const r = await q(`INSERT INTO clientes (marca_id,shopify_id,nome,email,telefone,recencia_dias,total_pedidos,receita_total,
+              data_nascimento,endereco,cidade,estado,ultimo_pedido,origem,created_at)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'shopify',$14)
+              ON CONFLICT (marca_id,shopify_id) WHERE shopify_id IS NOT NULL DO UPDATE SET
+              nome=EXCLUDED.nome,email=EXCLUDED.email,telefone=COALESCE(EXCLUDED.telefone,clientes.telefone),
+              recencia_dias=EXCLUDED.recencia_dias,total_pedidos=EXCLUDED.total_pedidos,receita_total=EXCLUDED.receita_total,
+              data_nascimento=COALESCE(EXCLUDED.data_nascimento,clientes.data_nascimento),
+              endereco=COALESCE(EXCLUDED.endereco,clientes.endereco),cidade=COALESCE(EXCLUDED.cidade,clientes.cidade),
+              estado=COALESCE(EXCLUDED.estado,clientes.estado),ultimo_pedido=EXCLUDED.ultimo_pedido,
+              updated_at=now() RETURNING (xmax=0) AS is_new`,
+              [mId,c.id,nome,c.email,telefone,recDias,c.orders_count||0,parseFloat(c.total_spent)||0,
+               dataNasc,endereco,cidade,estado,c.last_order_date||null,c.created_at]);
             if (r[0]?.is_new) cN++; else cU++;
           } catch(e) { erros++; }
         }
@@ -1324,8 +1460,12 @@ app.post("/api/integracoes/:id/sync", requireAuth(async (req, res) => {
         sinceId = ords[ords.length-1].id;
         if (ords.length < 250) break;
       }
+
+      // Auto-gerar campanhas sugeridas após sync
+      await gerarCampanhasSugeridas(mId);
+
       await q("UPDATE integracoes SET ultimo_sync=now(), status='conectado' WHERE id=$1", [integ.id]);
-      return res.json({ ok: true, clientes_novos: cN, clientes_atualizados: cU, pedidos_novos: pN, pedidos_atualizados: pU, erros, duracao_ms: Date.now()-startTime });
+      return res.json({ ok: true, clientes_novos: cN, clientes_atualizados: cU, pedidos_novos: pN, pedidos_atualizados: pU, aniversarios, erros, duracao_ms: Date.now()-startTime });
     } catch (e) {
       await q("UPDATE integracoes SET status='erro' WHERE id=$1", [integ.id]);
       return res.status(500).json({ ok: false, error: e.message });

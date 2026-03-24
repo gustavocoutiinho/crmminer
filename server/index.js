@@ -202,7 +202,7 @@ app.post("/api/clientes/:id/timeline", requireAuth(async (req, res) => {
 }));
 
 // ── Generic CRUD ─────────────────────────────────────────────────────────────
-const TABLES = ["clientes","pedidos","campanhas","tarefas","timeline","mensagens","conexoes_externas","marcas","automacoes","automacao_execucoes","users"];
+const TABLES = ["clientes","pedidos","campanhas","tarefas","timeline","mensagens","conexoes_externas","marcas","automacoes","automacao_execucoes","users","fidelidade","pipeline","segmentos","agenda","qrcodes","indicacoes","respostas_rapidas","metas","lojas","tags","inbox","permissoes","campanhas_sugeridas","integracoes","activity_log","notificacoes","sync_logs","templates_mensagem"];
 
 // GET list
 app.get("/api/data/:table", requireAuth(async (req, res) => {

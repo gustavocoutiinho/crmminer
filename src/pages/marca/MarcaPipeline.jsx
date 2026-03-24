@@ -6,6 +6,29 @@ import { fetchOportunidades, createOportunidade, updateOportunidade, deleteOport
 import { fmtBRL } from "../../utils/helpers";
 
 
+const ETAPA_CFG = {
+  lead:            { label: "Lead",            icon: "🎯", c: "#6e6e73", bg: "#f0f0f0", prob: 10 },
+  contato:         { label: "Contato",         icon: "📞", c: "#4545F5", bg: "#e8e8ff", prob: 20 },
+  visita:          { label: "Visita/Showroom", icon: "👟", c: "#8e44ef", bg: "#f3eeff", prob: 35 },
+  proposta:        { label: "Proposta",        icon: "📋", c: "#ff9500", bg: "#fff3e0", prob: 50 },
+  negociacao:      { label: "Negociação",      icon: "🤝", c: "#ff6b35", bg: "#fff0e8", prob: 70 },
+  pedido:          { label: "Pedido",          icon: "📦", c: "#28cd41", bg: "#e9fbed", prob: 90 },
+  fechado_ganho:   { label: "Fechado ✓",       icon: "🏆", c: "#28cd41", bg: "#e9fbed", prob: 100 },
+  fechado_perdido: { label: "Perdido",         icon: "❌", c: "#ff3b30", bg: "#ffe5e3", prob: 0 },
+};
+
+const NEXT_STAGE = {
+  lead: "contato",
+  contato: "visita",
+  visita: "proposta",
+  proposta: "negociacao",
+  negociacao: "pedido",
+  pedido: "fechado_ganho",
+};
+
+const PIPELINE_STAGES = ["lead", "contato", "visita", "proposta", "negociacao", "pedido"];
+const ACTIVE_STAGES = PIPELINE_STAGES;
+
 function MarcaPipeline({ user }) {
   const [view, setView] = useState("kanban");
   const [ops, setOps] = useState([]);
@@ -364,7 +387,7 @@ function MarcaPipeline({ user }) {
 
   return (
     <div className="fade-up">
-      <SectionHeader tag="Operação" title="Pipeline de Vendas — Atacado"
+      <SectionHeader tag="Operação" title="Pipeline | B2B"
         action={
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <div className="seg" style={{ display: "flex" }}>

@@ -6,6 +6,8 @@ import { useToast } from "../../context/ToastContext";
 function GestaoQRCodes({ user }) {
   const toast = useToast();
   const marcaId = user.marca_id || user.marcaId || "demo";
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   const vendedores = useMemo(() => {
     return [];
@@ -48,13 +50,29 @@ function GestaoQRCodes({ user }) {
         </div>
       </div>
 
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <input className="ap-inp" placeholder="Buscar..." style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "6px 12px" }} value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 130 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="ativo">Com código (Ativo)</option>
+          <option value="inativo">Sem código (Inativo)</option>
+        </select>
+      </div>
+
       {/* Table */}
       <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "16px 22px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
           <span style={{ fontSize: 15, fontWeight: 700 }}>Vendedores & QR Codes</span>
         </div>
 
-        {vendedores.length === 0 ? (
+        {vendedores.filter(v => {
+          const s = search.toLowerCase();
+          if (s && !(v.nome || "").toLowerCase().includes(s)) return false;
+          if (filterStatus === "ativo" && !v.codigo_vendedor) return false;
+          if (filterStatus === "inativo" && v.codigo_vendedor) return false;
+          return true;
+        }).length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--muted, #aeaeb2)" }}>
             Nenhum vendedor encontrado.
           </div>
@@ -71,7 +89,13 @@ function GestaoQRCodes({ user }) {
               </tr>
             </thead>
             <tbody>
-              {vendedores.map(v => {
+              {vendedores.filter(v => {
+                const s = search.toLowerCase();
+                if (s && !(v.nome || "").toLowerCase().includes(s)) return false;
+                if (filterStatus === "ativo" && !v.codigo_vendedor) return false;
+                if (filterStatus === "inativo" && v.codigo_vendedor) return false;
+                return true;
+              }).map(v => {
                 const stats = v.qr_stats || { escaneados: 0, vendas: 0, receita: 0 };
                 const temCodigo = !!v.codigo_vendedor;
                 const link = temCodigo ? `https://${marcaDomain}/?ref=${v.codigo_vendedor}` : "";

@@ -15,6 +15,8 @@ function ContatosProativos({ user }) {
   const [pulados, setPulados] = useState([]);
   const [contatados, setContatados] = useState(0);
   const [showAgendar, setShowAgendar] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterTipo, setFilterTipo] = useState("");
 
   const [clientes, setClientes] = useState([]);
   useEffect(() => {
@@ -57,8 +59,25 @@ function ContatosProativos({ user }) {
         </div>
       )}
 
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <input className="ap-inp" placeholder="Buscar..." style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "6px 12px" }} value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 160 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+          <option value="">Todos os tipos</option>
+          <option value="sem_compra">Sem compra recente</option>
+          <option value="aniversario">Aniversário</option>
+          <option value="em_risco">Em risco</option>
+          <option value="reativacao">Reativação</option>
+          <option value="pos_venda">Pós-venda</option>
+        </select>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 14 }}>
-        {visiveis.map(({ cliente: cli, motivos, motivoPrincipal }) => (
+        {visiveis.filter(({ cliente: cli, motivoPrincipal }) => {
+          const s = search.toLowerCase();
+          if (s && !(cli.nome || "").toLowerCase().includes(s) && !(cli.telefone || "").toLowerCase().includes(s)) return false;
+          if (filterTipo && !(motivoPrincipal?.tipo || "").includes(filterTipo)) return false;
+          return true;
+        }).map(({ cliente: cli, motivos, motivoPrincipal }) => (
           <div key={cli.id} className="ap-card" style={{ padding: "18px 22px", borderLeft: `4px solid ${motivoPrincipal.cor}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <Avatar nome={cli.nome} size={36} />

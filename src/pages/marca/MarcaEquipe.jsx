@@ -14,6 +14,9 @@ function MarcaEquipe({ isAdmin, user }) {
   const setUsuarios = sbUsuarios && sbUsuarios.length > 0 ? () => {} : setLocalUsuarios;
 
   const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   function NovoUser({ onClose }) {
     const toast = useToast();
@@ -79,11 +82,31 @@ function MarcaEquipe({ isAdmin, user }) {
       <div className="kpi-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
         {[{ l: "Total", v: usuarios.length, c: "#4545F5" }, { l: "Admins", v: usuarios.filter((u) => u.role === "admin").length, c: "#4545F5" }, { l: "Gerentes", v: usuarios.filter((u) => u.role === "gerente").length, c: "#8e44ef" }, { l: "Vendedores", v: usuarios.filter((u) => u.role === "vendedor").length, c: "#28cd41" }].map((k, i) => <KpiCard key={i} label={k.l} value={k.v} color={k.c} />)}
       </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <input className="ap-inp" placeholder="Buscar..." style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "6px 12px" }} value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 130 }} value={filterRole} onChange={e => setFilterRole(e.target.value)}>
+          <option value="">Todas as funções</option>
+          <option value="admin">Admin</option>
+          <option value="gerente">Gerente</option>
+          <option value="vendedor">Vendedor</option>
+        </select>
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 120 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativo</option>
+          <option value="inativo">Inativo</option>
+        </select>
+      </div>
       <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr style={{ borderBottom: "1px solid rgba(0,0,0,0.07)", background: "rgba(0,0,0,0.02)" }}>{["Usuário", "Email", "Função", "Status", "Loja", ...(isAdmin ? ["Ações"] : [])].map((h) => <th key={h} className="ap-th">{h}</th>)}</tr></thead>
           <tbody>
-            {usuarios.map((u, i) => (
+            {usuarios.filter(u => {
+              const s = search.toLowerCase();
+              if (s && !(u.nome || "").toLowerCase().includes(s) && !(u.email || "").toLowerCase().includes(s)) return false;
+              if (filterRole && u.role !== filterRole) return false;
+              if (filterStatus && u.status !== filterStatus) return false;
+              return true;
+            }).map((u, i) => (
               <tr key={i} className="ap-tr">
                 <td className="ap-td"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><Avatar nome={u.nome} size={32} /><div style={{ fontSize: 14, fontWeight: 700 }}>{u.nome}</div></div></td>
                 <td className="ap-td"><span style={{ fontSize: 13, color: T.sub }}>{u.email}</span></td>

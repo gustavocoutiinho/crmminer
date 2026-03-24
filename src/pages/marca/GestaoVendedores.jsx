@@ -22,6 +22,8 @@ function GestaoVendedores({ user }) {
 
   const [clientes, setClientes] = useState([]);
   const [metas, setMetas] = useState([]);
+  const [search, setSearch] = useState("");
+  const [filterLoja, setFilterLoja] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -81,9 +83,23 @@ function GestaoVendedores({ user }) {
         </div>
       </div>
 
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <input className="ap-inp" placeholder="Buscar..." style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "6px 12px" }} value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 140 }} value={filterLoja} onChange={e => setFilterLoja(e.target.value)}>
+          <option value="">Todas as lojas</option>
+          {[...new Set(usuarios.map(u => u.loja).filter(Boolean))].map(l => <option key={l} value={l}>{l}</option>)}
+        </select>
+      </div>
+
       {/* Vendedor cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 16 }}>
-        {usuarios.map(v => {
+        {usuarios.filter(v => {
+          const s = search.toLowerCase();
+          if (s && !(v.nome || "").toLowerCase().includes(s) && !(v.email || "").toLowerCase().includes(s)) return false;
+          if (filterLoja && v.loja !== filterLoja) return false;
+          return true;
+        }).map(v => {
           const st = getVendedorStats(v);
           const statusCfg = STATUS_CFG[v.status_trabalho] || STATUS_CFG.ativo;
           const rd = ROLE_CFG[v.role] || ROLE_CFG.vendedor;

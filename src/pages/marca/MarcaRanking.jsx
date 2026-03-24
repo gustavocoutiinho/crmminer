@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { T, ROLE_CFG } from "../../lib/theme";
 import { Avatar, Chip, ProgressBar, SectionHeader } from "../../components/UI";
 import { useSupabaseQuery } from "../../lib/hooks";
 
 function MarcaRanking({ user }) {
+  const [periodo, setPeriodo] = useState("30d");
   const marcaId = user?.marca_id || user?.marcaId;
   const { data: apiUsers } = useSupabaseQuery("users", marcaId ? { eq: { marca_id: marcaId } } : {});
   const isVend = user.role === "vendedor";
@@ -17,6 +18,13 @@ function MarcaRanking({ user }) {
   return (
     <div className="fade-up">
       <SectionHeader tag="Performance" title="Ranking da Equipe" />
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <select className="ap-inp" style={{ fontSize: 12, padding: "6px 12px", minWidth: 140 }} value={periodo} onChange={e => setPeriodo(e.target.value)}>
+          <option value="7d">Últimos 7 dias</option>
+          <option value="30d">Últimos 30 dias</option>
+          <option value="90d">Últimos 90 dias</option>
+        </select>
+      </div>
       {isVend && <div style={{ background: "#eeeeff", border: "1px solid #4545F520", borderRadius: 12, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#4545F5", fontWeight: 500 }}>👤 Você está visualizando apenas sua posição no ranking.</div>}
       {list.length === 0 && <div style={{ textAlign: "center", padding: 40, color: T.muted }}>Nenhum vendedor encontrado.</div>}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(list.length || 1, 3)},1fr)`, gap: 14 }}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { T, ROLE_CFG, RFM_CFG } from "../../lib/theme";
 import { Avatar, Chip, KpiCard, ProgressBar, SectionHeader, ApTooltip } from "../../components/UI";
-import { fetchStats } from "../../lib/api";
+import { fetchStats, API_URL } from "../../lib/api";
 import VendedorDashboard from "./VendedorDashboard";
 import AgendaAdmin from "./AgendaAdmin";
 import EmptyState from "../../components/EmptyState";
@@ -13,12 +13,22 @@ function MarcaDashboard({ user, setPage }) {
   const rd = ROLE_CFG[user.role] || ROLE_CFG.vendedor;
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pedidosRecentes, setPedidosRecentes] = useState([]);
+  const [rankingVendedores, setRankingVendedores] = useState([]);
+  const [kpis, setKpis] = useState(null);
 
   const loadStats = useCallback(() => {
     fetchStats().then(s => { setStats(s); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  useEffect(() => { loadStats(); }, []);
+  useEffect(() => {
+    loadStats();
+    const token = localStorage.getItem("crm_token");
+    const headers = { Authorization: `Bearer ${token}` };
+    fetch(`${API_URL}/api/pedidos/recentes`, { headers }).then(r=>r.json()).then(d=>setPedidosRecentes(d.data||[])).catch(()=>{});
+    fetch(`${API_URL}/api/vendedores/ranking`, { headers }).then(r=>r.json()).then(d=>setRankingVendedores(d.data||[])).catch(()=>{});
+    fetch(`${API_URL}/api/dashboard/kpis`, { headers }).then(r=>r.json()).then(d=>setKpis(d)).catch(()=>{});
+  }, []);
   useEffect(() => { const iv = setInterval(loadStats, 30000); return () => clearInterval(iv); }, [loadStats]);
 
   const c = stats?.clientes || 0;
@@ -126,11 +136,15 @@ function MarcaDashboard({ user, setPage }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                 <span style={{ color: T.muted }}>Clientes em risco</span>
-                <span style={{ fontWeight: 700, color: "#ff3b30" }}>{rfm.at_risk || 0}</span>
+                <span style={{ fontWeight: 700, color: "#ff3b30" }}>{rfm.em_risco || 0}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                <span style={{ color: T.muted }}>Hibernando</span>
-                <span style={{ fontWeight: 700, color: "#ff9500" }}>{rfm.hibernating || 0}</span>
+                <span style={{ color: T.muted }}>Inativos</span>
+                <span style={{ fontWeight: 700, color: "#ff9500" }}>{rfm.inativo || 0}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: T.muted }}>Potenciais</span>
+                <span style={{ fontWeight: 700, color: "#28cd41" }}>{rfm.potencial || 0}</span>
               </div>
             </div>
           ) : (
@@ -174,6 +188,52 @@ function MarcaDashboard({ user, setPage }) {
               <span style={{ fontWeight: 600 }}>{0}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* KPIs Avançados */}
+      {kpis && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 16 }}>
+          <KpiCard label="LTV Médio" value={`R$ ${(+kpis.ltv).toLocaleString("pt-BR",{maximumFractionDigits:0})}`} sub="por cliente" color="#8e44ef" icon="📈" />
+          <KpiCard label="Ticket Médio" value={`R$ ${(+kpis.ticket_medio).toFixed(0)}`} sub="por pedido" color="#4545F5" icon="🎫" />
+          <KpiCard label="Taxa Recompra" value={`${kpis.taxa_recompra}%`} sub="2+ pedidos" color="#28cd41" icon="🔄" />
+          <KpiCard label="Churn Rate" value={`${kpis.churn_rate}%`} sub="inativos" color="#ff3b30" icon="📉" />
+        </div>
+      )}
+
+      {/* Últimos Pedidos + Ranking */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "14px 22px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>🛍 Últimos Pedidos</span>
+          </div>
+          {pedidosRecentes.length > 0 ? pedidosRecentes.slice(0,5).map((p,i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 22px", borderBottom: i < 4 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{p.cliente_nome || "Cliente"}</div>
+                <div style={{ fontSize: 11, color: T.muted }}>{new Date(p.created_at).toLocaleDateString("pt-BR")}</div>
+              </div>
+              <Chip label={p.status || "—"} c={p.status==="aprovado"?"#28cd41":"#ff9500"} bg={p.status==="aprovado"?"#e9fbed":"#fff3e0"} />
+              <span className="num" style={{ fontSize: 13, fontWeight: 700 }}>R$ {(+p.valor).toLocaleString("pt-BR")}</span>
+            </div>
+          )) : <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: T.muted }}>Nenhum pedido ainda</div>}
+        </div>
+
+        <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "14px 22px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>🏆 Ranking Vendedores</span>
+          </div>
+          {rankingVendedores.length > 0 ? rankingVendedores.map((v,i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 22px", borderBottom: i < rankingVendedores.length-1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: i===0?"#ffd700":i===1?"#c0c0c0":i===2?"#cd7f32":T.muted, width: 24 }}>{i+1}º</span>
+              <Avatar nome={v.nome} size={28} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{v.nome}</div>
+                <div style={{ fontSize: 11, color: T.muted }}>{v.clientes_total} clientes · {v.pedidos_mes} pedidos/mês</div>
+              </div>
+              <span className="num" style={{ fontSize: 13, fontWeight: 700, color: "#4545F5" }}>R$ {(+v.receita_mes).toLocaleString("pt-BR")}</span>
+            </div>
+          )) : <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: T.muted }}>Cadastre vendedores para ver o ranking</div>}
         </div>
       </div>
 

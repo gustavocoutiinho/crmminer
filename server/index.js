@@ -160,11 +160,37 @@ app.get("/api/stats", requireAuth(async (req, res) => {
     FROM pedidos ${wa} GROUP BY mes ORDER BY mes DESC LIMIT 6
   `, p);
 
+  // Equipe stats
+  const equipeW = marcaId ? "WHERE marca_id = $1" : "";
+  const equipeAll = await q(`SELECT COUNT(*) as total FROM users ${equipeW}`, p);
+  const equipeAtivos = await q(`SELECT COUNT(*) as n FROM users ${equipeW ? equipeW + " AND status = 'ativo'" : "WHERE status = 'ativo'"}`, p);
+
+  // Agenda stats (hoje)
+  const today = new Date().toISOString().slice(0,10);
+  const agendaW = marcaId ? "WHERE marca_id = $1" : "";
+  const agPendentes = await q(`SELECT COUNT(*) as n FROM agenda ${agendaW ? agendaW + ` AND status = 'pendente' AND data_inicio::date = '${today}'` : `WHERE status = 'pendente' AND data_inicio::date = '${today}'`}`, p);
+  const agAtrasados = await q(`SELECT COUNT(*) as n FROM agenda ${agendaW ? agendaW + ` AND status = 'pendente' AND data_inicio < now()` : `WHERE status = 'pendente' AND data_inicio < now()`}`, p);
+
+  // Tarefas pendentes
+  const tarW = marcaId ? "WHERE marca_id = $1 AND concluida = false" : "WHERE concluida = false";
+  const [tarPend] = await q(`SELECT COUNT(*) as n FROM tarefas ${tarW}`, p);
+
+  // RFM com keys em português E inglês pra compatibilidade
+  const rfmMap = Object.fromEntries(rfm.map(r => [r.seg, +r.n]));
+  rfmMap.at_risk = rfmMap.em_risco || 0;
+  rfmMap.hibernating = rfmMap.inativo || 0;
+  rfmMap.champion = rfmMap.campiao || 0;
+  rfmMap.loyal = rfmMap.fiel || 0;
+  rfmMap.potential = rfmMap.potencial || 0;
+
   res.json({
     clientes: +cli.n, pedidos: +ped.n, receita: +ped.r, ticket_medio: +tm.v,
-    rfm: Object.fromEntries(rfm.map(r => [r.seg, +r.n])),
+    rfm: rfmMap,
     top_clientes: top,
     pedidos_por_mes: porMes.reverse(),
+    equipe: { total: +equipeAll[0].total, ativos: +equipeAtivos[0].n },
+    agenda: { pendentes: +agPendentes[0].n, atrasados: +agAtrasados[0].n },
+    tarefas_pendentes: +tarPend.n,
   });
 }));
 
@@ -2451,10 +2477,10 @@ app.get("/api/tarefas", requireAuth(async (req, res) => {
     const { status, responsavel_id } = req.query;
     const conds = []; const params = [];
     if (marcaId) { conds.push(`t.marca_id=$${params.length+1}`); params.push(marcaId); }
-    if (status) { conds.push(`t.status=$${params.length+1}`); params.push(status); }
+    if (status) { conds.push(`t.status_kanban=$${params.length+1}`); params.push(status); }
     if (responsavel_id) { conds.push(`t.responsavel_id=$${params.length+1}`); params.push(responsavel_id); }
     const w = conds.length ? "WHERE " + conds.join(" AND ") : "";
-    const rows = await q(`SELECT t.*, u.nome as responsavel_nome, c.nome as cliente_nome FROM tarefas t LEFT JOIN users u ON t.responsavel_id=u.id LEFT JOIN clientes c ON t.cliente_id=c.id ${w} ORDER BY CASE t.prioridade WHEN 'urgente' THEN 0 WHEN 'alta' THEN 1 WHEN 'media' THEN 2 ELSE 3 END, t.data_limite ASC NULLS LAST`, params);
+    const rows = await q(`SELECT t.*, t.status_kanban as status, u.nome as responsavel_nome, c.nome as cliente_nome FROM tarefas t LEFT JOIN users u ON t.responsavel_id=u.id LEFT JOIN clientes c ON t.cliente_id=c.id ${w} ORDER BY CASE t.prioridade WHEN 'urgente' THEN 0 WHEN 'alta' THEN 1 WHEN 'media' THEN 2 ELSE 3 END, t.data_limite ASC NULLS LAST`, params);
     res.json({ data: rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 }));
@@ -2468,7 +2494,7 @@ app.patch("/api/tarefas/:id", requireAuth(async (req, res) => {
     if (tipo !== undefined) { sets.push(`tipo=$${vals.length+1}`); vals.push(tipo); }
     if (data_limite !== undefined) { sets.push(`data_limite=$${vals.length+1}`); vals.push(data_limite); }
     if (concluida !== undefined) { sets.push(`concluida=$${vals.length+1}`); vals.push(concluida); }
-    if (status !== undefined) { sets.push(`status=$${vals.length+1}`); vals.push(status); if (status === "concluida") { sets.push(`concluida=true`); } }
+    if (status !== undefined) { sets.push(`status_kanban=$${vals.length+1}`); vals.push(status); if (status === "concluida") { sets.push(`concluida=true`); } }
     if (prioridade !== undefined) { sets.push(`prioridade=$${vals.length+1}`); vals.push(prioridade); }
     if (responsavel_id !== undefined) { sets.push(`responsavel_id=$${vals.length+1}`); vals.push(responsavel_id); }
     if (cliente_id !== undefined) { sets.push(`cliente_id=$${vals.length+1}`); vals.push(cliente_id); }
